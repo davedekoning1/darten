@@ -7,7 +7,14 @@ Created on Sun Jan 31 22:39:23 2016
 
 """ darten """
 
-score = 0
+class AutoVivification(dict):
+    """Implementation of perl's autovivification feature."""
+    def __getitem__(self, item):
+        try:
+            return dict.__getitem__(self, item)
+        except KeyError:
+            value = self[item] = type(self)()
+            return value
 
 class Darters():
     def __init__(self, name, score = 501, no_throws = 0, legs = 0, sets = 0, matches = 0, average = 0):
@@ -24,8 +31,8 @@ class Match():
     won_by = None
     lost_by = None
     
-    def __init__(self, id, bo_legs, bo_sets):
-        self.id = id
+    def __init__(self, match_id, bo_legs, bo_sets):
+        self.match_id = match_id
         self.bo_legs = bo_legs
         self.bo_sets = bo_sets
 
@@ -34,8 +41,8 @@ class Set():
     won_by = None
     lost_by = None
     
-    def __init__(self, id, bo_legs):
-        self.id = id
+    def __init__(self, set_id, bo_legs):
+        self.set_id = set_id
         self.bo_legs = bo_legs
     
 class Leg():
@@ -46,12 +53,12 @@ class Leg():
     finish = 0
     twentysix = []
     
-    def __init__(self, id, players):
-        self.id = id
+    def __init__(self, leg_id):
+        self.leg_id = leg_id
     
-    def save_throws(players):
+    def save_throws(self, players):
         for player in players:
-            throws[player.name] = []
+            self.throws[player.name] = []
 
 def score_keeper(score, throw):
     if score - throw < 2 and score - throw != 0:
@@ -74,18 +81,26 @@ def sets_reset(players):
     for player in players:
         player.sets = 0
         
+def save_data(data, fname):
+    with open(fname, 'wb') as fp:
+        pickle.dump(data, fp)
+        
 def dart_match(players, bo_legs, bo_sets):
-    match_id = 1
+    match_id = data['match_counter'] + 1
+    data['match_counter'] += 1
     
     Current_match = Match(match_id, bo_legs, bo_sets)
     
     set_id = 1
+    set_id_db = str(match_id) + '.' + str(set_id)
 
-    Current_set = Set(str(match_id) + '.' + str(set_id), bo_legs)
+    Current_set = Set(set_id_db, bo_legs)
     
     leg_id = 1
-
-    Current_leg = Leg(str(match_id) + '.' + str(set_id) + '.' + str(leg_id))
+    leg_id_db = str(match_id) + '.' + str(set_id) + '.' + str(leg_id)
+    
+    Current_leg = Leg(leg_id_db)
+    Current_leg.save_throws(players)
     
     score_reset(players)
     legs_reset(players)
@@ -116,7 +131,9 @@ def dart_match(players, bo_legs, bo_sets):
                 Current_leg.won_by = player.name
                 Current_leg.lost_by = [loser.name for loser in players if loser != player]
                 
-                data[legs][leg_id].append(Current_leg)
+                data['legs'][leg_id_db] = Current_leg
+                
+                save_data(data,fname)
                 
                 leg_counter += 1
                 player.legs += 1
@@ -124,12 +141,15 @@ def dart_match(players, bo_legs, bo_sets):
                 if player.legs == bo_legs:
                     
                     Current_set.is_finished = True
-                    Current.set.won_by = player.name
+                    Current_set.won_by = player.name
                     Current_set.lost_by = [loser.name for loser in players if loser != player]
                     
-                    data[sets][set_id].append(Current_set)
+                    data['sets'][set_id_db] = Current_set
+                    
+                    save_data(data,fname)
                     
                     leg_counter = 0
+                    leg_id = 1
                     set_counter += 1
                     player.sets += 1
                     
@@ -139,28 +159,55 @@ def dart_match(players, bo_legs, bo_sets):
                         Current_match.won_by = player.name
                         Current_match.lost_by = [loser.name for loser in players if loser != player]
                         
-                        data[matches][match_id].append(Current_match)
+                        data['matches'][match_id] = Current_match
+                        
+                        save_data(data,fname)
                         
                         match_ongoing = False
                         print '%s has won the game!' % player.name
                         break
                     else:
+                        score_reset(players)
+                        
                         set_id += 1
+                        set_id_db = str(match_id) + '.' + str(set_id)
 
-                        Current_set = Set(str(match_id) + '.' + str(set_id), bo_legs)
+                        Current_set = Set(set_id_db, bo_legs)
+                        
+                        leg_id_db = str(match_id) + '.' + str(set_id) + '.' + str(leg_id)
+                
+                        Current_leg = Leg(leg_id_db)
+                        Current_leg.save_throws(players)
                         
                         legs_reset(players)
                         print '%s has won the set %s!' % (player.name, set_counter)
                 else:
                     
-                    leg_id += 1
+                    leg_id_db = str(match_id) + '.' + str(set_id) + '.' + str(leg_id)
                 
-                    Current_leg = Leg(str(match_id) + '.' + str(set_id) + '.' + str(leg_id))
+                    Current_leg = Leg(leg_id_db)
+                    Current_leg.save_throws(players)
                     
                     score_reset(players)
                     print '%s has won the leg %s!' % (player.name, leg_counter)
 
-player1 = Darters(raw_input("Player1: "))
-player2 = Darters(raw_input("Player2: "))
+import pickle
+import os
 
-dart_match([player1,player2], 3,3)
+if __name__ == "__main__":
+    player1 = Darters(raw_input("Player1: "))
+    player2 = Darters(raw_input("Player2: "))
+
+    bo_legs = int(raw_input("Best of legs: "))
+    bo_sets = int(raw_input("Best of sets: "))
+
+    fname = 'database.pkl'
+
+    if os.path.isfile(fname):
+        with open(fname, 'rb') as fp:
+            data = pickle.load(fp)
+    else:
+        data = AutoVivification()
+        data['match_counter'] = 0
+
+    dart_match([player1,player2], bo_legs, bo_sets)
