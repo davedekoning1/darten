@@ -115,82 +115,6 @@ def dart_match(players, bo_legs, bo_sets):
     
     return [match_id, data, Current_match, set_id, set_id_db, Current_set, leg_id, leg_id_db, Current_leg, leg_counter, set_counter]
 
-    # while match_ongoing:
-#         for player in players:
-#
-#
-#
-#             if player.score != 0:
-#                 player.no_throws += 1
-#
-#             else:
-#                 player.no_throws += 1
-#                 Current_leg.finish = throw
-#                 Current_leg.is_finished = True
-#                 Current_leg.won_by = player.name
-#                 Current_leg.lost_by = [loser.name for loser in players if loser != player]
-#
-#                 data['legs'][leg_id_db] = Current_leg
-#
-#                 save_data(data,fname)
-#
-#                 leg_counter += 1
-#                 player.legs += 1
-#
-#                 if player.legs == bo_legs:
-#
-#                     Current_set.is_finished = True
-#                     Current_set.won_by = player.name
-#                     Current_set.lost_by = [loser.name for loser in players if loser != player]
-#
-#                     data['sets'][set_id_db] = Current_set
-#
-#                     save_data(data,fname)
-#
-#                     leg_counter = 0
-#                     leg_id = 1
-#                     set_counter += 1
-#                     player.sets += 1
-#
-#                     if player.sets == bo_sets:
-#
-#                         Current_match.is_finished = True
-#                         Current_match.won_by = player.name
-#                         Current_match.lost_by = [loser.name for loser in players if loser != player]
-#
-#                         data['matches'][match_id] = Current_match
-#
-#                         save_data(data,fname)
-#
-#                         match_ongoing = False
-#                         print '%s has won the game!' % player.name
-#                         break
-#                     else:
-#                         score_reset(players)
-#
-#                         set_id += 1
-#                         set_id_db = str(match_id) + '.' + str(set_id)
-#
-#                         Current_set = Set(set_id_db, bo_legs)
-#
-#                         leg_id_db = str(match_id) + '.' + str(set_id) + '.' + str(leg_id)
-#
-#                         Current_leg = Leg(leg_id_db)
-#                         Current_leg.save_throws(players)
-#
-#                         legs_reset(players)
-#                         print '%s has won the set %s!' % (player.name, set_counter)
-#                 else:
-#
-#                     leg_id_db = str(match_id) + '.' + str(set_id) + '.' + str(leg_id)
-#
-#                     Current_leg = Leg(leg_id_db)
-#                     Current_leg.save_throws(players)
-#
-#                     score_reset(players)
-#                     print '%s has won the leg %s!' % (player.name, leg_counter)
-#
-
 import pickle
 import os
 from Tkinter import *
@@ -211,18 +135,13 @@ class MyGUI:
         self.depositlabel1 = Label(self.__mainWindow, text = 'Player 1')
         self.depositlabel2 = Label(self.__mainWindow, text = 'Player 2')
         
-        self.label_sets = Label(self.__mainWindow, text = 'Sets: ')
-        self.label_legs = Label(self.__mainWindow, text = 'Legs: ')
-        
-        
-        # self.label_text12 = StringVar()
-#         self.label_text12.set("Throw!")
-#         self.label12 = Label(self.__mainWindow, textvariable=self.label_text12)
-#         self.label12.bind("<Button-1>", self.cycle_label_text)
-#         self.label_text13 = StringVar()
-#         self.label_text13.set("Wait for it!")
-#         self.label13 = Label(self.__mainWindow, textvariable=self.label_text13)
-#         self.label13.bind("<Button-1>", self.cycle_label_text)
+        self.label_index = 0
+        self.label_text12 = StringVar()
+        self.label_text12.set("Throw!")
+        self.label12 = Label(self.__mainWindow, textvariable=self.label_text12)
+        self.label_text13 = StringVar()
+        self.label_text13.set("Wait for it!")
+        self.label13 = Label(self.__mainWindow, textvariable=self.label_text13)
         
         self.depositlabel3 = Listbox(self.__mainWindow, width = 10)
         self.depositlabel4 = Listbox(self.__mainWindow, width = 10)
@@ -243,19 +162,59 @@ class MyGUI:
         self.label2.grid(row = 2, column = 3, columnspan=2, sticky=E)
         self.depositEntry1.grid(row = 3,column = 1)
         self.depositEntry2.grid(row = 3,column = 4)
-
-        self.depositlabel3.grid(row = 4,column = 1)
-        self.depositlabel4.grid(row = 4,column = 3)
-        self.depositEntry3.grid(row = 4,column = 2, sticky=E)
-        self.depositEntry4.grid(row = 4,column = 4, sticky=E)
         
-        self.button1.grid(row = 5,columnspan = 4, sticky=N)
+        self.label12.grid(row = 4, column = 1, columnspan = 2)
+        self.label13.grid(row = 4, column = 3, columnspan = 2)
+        
+        self.depositlabel3.grid(row = 5,column = 1)
+        self.depositlabel4.grid(row = 5,column = 3)
+        self.depositEntry3.grid(row = 5,column = 2, sticky=E)
+        self.depositEntry4.grid(row = 5,column = 4, sticky=E)
+        
+        self.button1.grid(row = 4, column = 5, columnspan = 2, sticky=N)
+        
+        self.score_frame = Frame(self.__mainWindow)
+        self.score_frame.grid(row = 1, rowspan = 3, column = 6)
+        
+        self.label_sets = Label(self.score_frame, text = 'Sets: ')
+        self.label_legs = Label(self.score_frame, text = 'Legs: ')
+        
+        self.label_player1 = Label(self.score_frame, text = 'Player 1')
+        self.label_player2 = Label(self.score_frame, text = 'Player 2')
+        
+        self.label_player1_sets = Label(self.score_frame, text = "0")
+        self.label_player1_legs = Label(self.score_frame, text = "0")
+        self.label_player2_sets = Label(self.score_frame, text = "0")
+        self.label_player2_legs = Label(self.score_frame, text = "0")
+        
+        self.label_sets.grid(row = 1, column = 3)
+        self.label_legs.grid(row = 1, column = 2)
+        
+        self.label_player1.grid(row = 2, column = 1)
+        self.label_player2.grid(row = 3, column = 1)
+        
+        self.label_player1_sets.grid(row = 2, column = 3)
+        self.label_player1_legs.grid(row = 2, column = 2)
+        self.label_player2_sets.grid(row = 3, column = 3)
+        self.label_player2_legs.grid(row = 3, column = 2)
 
         mainloop()
+
+    def change_number_label(self, no_sets, label):
+        label.config(text = str(no_sets))
+        
+    def cycle_label_text(self):
+        self.LABEL_TEXT = ["Throw!", "Wait for it!"]
+        self.label_index -= 1
+        if self.label_index < -1:
+            self.label_index = 0
+        self.label_text12.set(self.LABEL_TEXT[self.label_index])
+        self.label_text13.set(self.LABEL_TEXT[self.label_index+1])
 
     def depositCallBack1(self,event):
         self.labelText = self.depositEntry1.get()
         self.depositlabel1.config(text = self.labelText)
+        self.label_player1.config(text = self.labelText)
         
         self.player1 = Darters(self.depositEntry1.get())
         print(self.labelText)
@@ -263,11 +222,14 @@ class MyGUI:
     def depositCallBack2(self,event):
         self.labelText = self.depositEntry2.get()
         self.depositlabel2.config(text = self.labelText)
+        self.label_player2.config(text = self.labelText)
         
         self.player2 = Darters(self.depositEntry2.get())
         print(self.labelText)
         
     def depositCallBack3(self,event):
+        self.cycle_label_text()
+        
         throw = int(event.widget.get())
         if throw < 0 or throw > 180:
             print 'No!'
@@ -281,6 +243,7 @@ class MyGUI:
             
             if self.player1.score != 0:
                 self.player1.no_throws += 1
+                self.depositEntry4.focus_set()
             
             else:
                 self.player1.no_throws += 1
@@ -310,6 +273,8 @@ class MyGUI:
                     self.leg_id = 1
                     self.set_counter += 1
                     self.player1.sets += 1
+                    
+                    self.change_number_label(self.player1.sets, self.label_player1_sets)
                 
                     if self.player1.sets == bo_sets:
                     
@@ -342,6 +307,12 @@ class MyGUI:
                         self.Current_leg.save_throws(self.players)
                     
                         legs_reset(self.players)
+                        
+                        self.depositEntry4.focus_set()
+                        
+                        self.change_number_label(self.player1.legs, self.label_player1_legs)
+                        self.change_number_label(self.player2.legs, self.label_player2_legs)
+                        
                         print '%s has won the set %s!' % (self.player1.name, self.set_counter)
                 else:
                 
@@ -351,6 +322,10 @@ class MyGUI:
                     self.Current_leg.save_throws(self.players)
                 
                     score_reset(self.players)
+                    self.change_number_label(self.player1.legs, self.label_player1_legs)
+
+                    self.depositEntry4.focus_set()
+                    
                     self.depositlabel3.delete(0,END)
                     self.depositlabel4.delete(0,END)
                     self.depositlabel3.insert(END, "501")
@@ -358,6 +333,8 @@ class MyGUI:
                     print '%s has won the leg %s!' % (self.player1.name, self.leg_counter)
     
     def depositCallBack4(self,event):
+        self.cycle_label_text()
+        
         throw = int(event.widget.get())
         if throw < 0 or throw > 180:
             print 'No!'
@@ -371,6 +348,7 @@ class MyGUI:
             
             if self.player2.score != 0:
                 self.player2.no_throws += 1
+                self.depositEntry3.focus_set()
             
             else:
                 self.player2.no_throws += 1
@@ -400,6 +378,8 @@ class MyGUI:
                     self.leg_id = 1
                     self.set_counter += 1
                     self.player2.sets += 1
+                    
+                    self.change_number_label(self.player2.sets, self.label_player2_sets)
                 
                     if self.player2.sets == bo_sets:
                     
@@ -432,6 +412,12 @@ class MyGUI:
                         self.Current_leg.save_throws(self.players)
                     
                         legs_reset(self.players)
+
+                        self.depositEntry3.focus_set()
+                        
+                        self.change_number_label(self.player2.legs, self.label_player2_legs)
+                        self.change_number_label(self.player1.legs, self.label_player1_legs)
+                        
                         print '%s has won the set %s!' % (self.player2.name, self.set_counter)
                 else:
                 
@@ -441,23 +427,16 @@ class MyGUI:
                     self.Current_leg.save_throws(self.players)
                 
                     score_reset(self.players)
+                    self.change_number_label(self.player2.legs, self.label_player2_legs)
+
+                    self.depositEntry3.focus_set()
+                    
                     self.depositlabel3.delete(0,END)
                     self.depositlabel4.delete(0,END)
                     self.depositlabel3.insert(END, "501")
                     self.depositlabel4.insert(END, "501")
                     print '%s has won the leg %s!' % (self.player2.name, self.leg_counter)
     
-    # def depositCallBack4(self,event):
-#         throw = int(event.widget.get())
-#         if throw < 0 or throw > 180:
-#             print 'No!'
-#         else:
-#             self.player2.score, throw = score_keeper(self.player2.score, throw)
-#             self.labelText = str(self.player2.score) + "    " + str(throw)
-#             self.depositlabel4.insert(END, self.labelText)
-#             event.widget.delete(0, 'end')
-#
-#             Current_leg.throws[player2.name].append(throw)
         
     def start_dart_match(self):
         self.depositlabel3.delete(0,END)
@@ -465,8 +444,18 @@ class MyGUI:
         self.depositlabel3.insert(END, "501")
         self.depositlabel4.insert(END, "501")
         
+        self.depositEntry3.focus_set()
+
+        self.label_text12.set("Throw!")
+        self.label_text13.set("Wait for it!")
+        
         self.players = [self.player1,self.player2]
         [self.match_id, self.data, self.Current_match, self.set_id, self.set_id_db, self.Current_set, self.leg_id, self.leg_id_db, self.Current_leg, self.leg_counter, self.set_counter] = dart_match([self.player1,self.player2], bo_legs, bo_sets)
+        
+        self.change_number_label(self.player1.legs, self.label_player1_legs)
+        self.change_number_label(self.player1.sets, self.label_player1_sets)
+        self.change_number_label(self.player2.legs, self.label_player2_legs)
+        self.change_number_label(self.player2.sets, self.label_player2_sets)
 
 if __name__ == "__main__":
     #player1 = Darters(raw_input("Player1: "))
