@@ -3,9 +3,30 @@
 Created on Sun Jan 31 22:39:23 2016
 
 @author: konin_de
+
+New update 09-02-2016:
+    Database issue is fixed, however it was found that the statistics for first 9 darts do not match yet.
+    Furthermore the code can possibly be cleaned a fair bit.
+    
+    ** Still to be added **
+    1. Possible finishes
+    2. View of previous matches
+    3. More stats/ custom stats
+    4. Maybe add a menu for the settings of the match
+    6. Nicer playername input fields
+    7. Better layout of the gui
+    10. Pop-up screen/save to excel/pdf with match overview
+    11. Pop-ups when doing something wrong
+
 """
 
 """ darten """
+
+import pickle
+import os
+import numpy as np
+from Tkinter import *
+import ttk
 
 class AutoVivification(dict):
     """Implementation of perl's autovivification feature."""
@@ -34,48 +55,47 @@ class Darters():
         self.average = average
         
 class Match():
-    is_finished = False
-    won_by = None
-    lost_by = None
-    throws = {}
     
     def __init__(self, match_id, bo_legs, bo_sets):
         self.match_id = match_id
         self.bo_legs = bo_legs
         self.bo_sets = bo_sets
+        self.is_finished = False
+        self.won_by = None
+        self.lost_by = None
+        self.match_throws = {}
         
-    def save_throws(self, players):
+    def save_match_throws(self, players):
         for player in players:
-            self.throws[player.name] = []
+            self.match_throws[player.name] = []
 
 class Set():
-    is_finished = False
-    won_by = None
-    lost_by = None
-    throws = {}
     
     def __init__(self, set_id, bo_legs):
         self.set_id = set_id
         self.bo_legs = bo_legs
+        self.is_finished = False
+        self.won_by = None
+        self.lost_by = None
+        self.set_throws = {}
         
-    def save_throws(self, players):
+    def save_set_throws(self, players):
         for player in players:
-            self.throws[player.name] = []    
-    
+            self.set_throws[player.name] = []
+
 class Leg():
-    is_finished = False
-    won_by = None
-    lost_by = None
-    throws = {}
-    finish = 0
-    twentysix = []
-    
     def __init__(self, leg_id):
         self.leg_id = leg_id
+        self.is_finished = False
+        self.won_by = None
+        self.lost_by = None
+        self.leg_throws = {}
+        self.finish = 0
+        self.twentysix = []
     
-    def save_throws(self, players):
+    def save_leg_throws(self, players):
         for player in players:
-            self.throws[player.name] = []
+            self.leg_throws[player.name] = []
 
 def score_keeper(score, throw):
     if score - throw < 2 and score - throw != 0:
@@ -105,28 +125,25 @@ def retag(tag, *args):
     for widget in args:
         widget.bindtags((tag,) + widget.bindtags())
 
-def dart_match(players, bo_legs, bo_sets, data):
-    for key in data['legs'].keys():
-        print key, data['legs'][key].throws
-    
+def dart_match(players, bo_legs, bo_sets, data):    
     match_id = data['match_counter'] + 1
     data['match_counter'] += 1
 
-    Current_match = Match(match_id, bo_legs, bo_sets)
-    Current_match.save_throws(players)
+    data['matches'][match_id] = Match(match_id, bo_legs, bo_sets)
+    data['matches'][match_id].save_match_throws(players)
 
     set_id = 1
     set_id_db = str(match_id) + '.' + str(set_id)
 
-    Current_set = Set(set_id_db, bo_legs)
-    Current_set.save_throws(players)
+    data['sets'][set_id_db] = Set(set_id_db, bo_legs)
+    data['sets'][set_id_db].save_set_throws(players)
 
     leg_id = 1
     leg_id_db = str(match_id) + '.' + str(set_id) + '.' + str(leg_id)
-
-    Current_leg = Leg(leg_id_db)
-    Current_leg.save_throws(players)
-
+    
+    data['legs'][leg_id_db] = Leg(leg_id_db)
+    data['legs'][leg_id_db].save_leg_throws(players)
+    
     score_reset(players)
     legs_reset(players)
     sets_reset(players)
@@ -135,20 +152,20 @@ def dart_match(players, bo_legs, bo_sets, data):
     leg_counter = 0
     set_counter = 0
     
-    return [match_id, data, Current_match, set_id, set_id_db, Current_set, leg_id, leg_id_db, Current_leg, leg_counter, set_counter]
-
-import pickle
-import os
-import numpy as np
-from Tkinter import *
+    imp_throws = [163, 166, 169, 172, 173, 175, 176, 178, 179]
+    
+    return [match_id, data, set_id, set_id_db, leg_id, leg_id_db, leg_counter, set_counter, match_ongoing, imp_throws]
 
 class MyGUI:
     
     def __init__(self):
         self.__mainWindow = Tk()
+        # self.__mainWindow.after(1, lambda:self.__mainWindow.focus_force())
         #self.fram1 = Frame(self.__mainWindow)
         
-        self.button1 = Button(self.__mainWindow, text = "Start new match", command=self.start_dart_match)
+        self.button1 = ttk.Button(self.__mainWindow, text = "Start new match",command = self.start_dart_match2, takefocus = 1)
+        self.button1.bind('<Return>', self.start_dart_match)
+        # self.button1.bind('<Button-1>', self.start_dart_match)
         
         self.labelText = 'User name player 1'
         self.label1 = Label(self.__mainWindow, text = self.labelText)
@@ -158,7 +175,6 @@ class MyGUI:
         self.depositlabel1 = Label(self.__mainWindow, text = 'Player 1')
         self.depositlabel2 = Label(self.__mainWindow, text = 'Player 2')
         
-        self.label_index = 0
         self.label_text12 = StringVar()
         self.label_text12.set("Throw!")
         self.label12 = Label(self.__mainWindow, textvariable=self.label_text12)
@@ -170,6 +186,7 @@ class MyGUI:
         self.depositlabel4 = Listbox(self.__mainWindow, width = 10)
     
         self.depositEntry1 = Entry(self.__mainWindow, width = 10)
+        self.depositEntry1.focus_set()
         self.depositEntry1.bind('<Return>', self.depositCallBack1)
         self.depositEntry2 = Entry(self.__mainWindow, width = 10)
         self.depositEntry2.bind('<Return>', self.depositCallBack2)
@@ -317,8 +334,8 @@ class MyGUI:
         
         mainloop()
 
-    def change_number_label(self, no_sets, label):
-        label.config(text = str(no_sets))
+    def change_number_label(self, text, label):
+        label.config(text = str(text))
         
     def check_throw_stats_p1(self, throw, player):
         if throw == 180:
@@ -370,32 +387,43 @@ class MyGUI:
             player.finish_80 += 1
             self.label_finish80_p2.config(text = str(player.finish_80))
     def calculate_averages(self, Leg, Set, Match, player):
-        Leg_average = np.mean(Leg.throws[player.name])
-        Set_average = np.mean(Set.throws[player.name])
-        Match_average = np.mean(Match.throws[player.name])
+        Leg_average = np.mean(Leg.leg_throws[player.name])
+        Set_average = np.mean(Set.set_throws[player.name])
+        Match_average = np.mean(Match.match_throws[player.name])
         
         if player.no_throws == 3:
-            First_9 = np.mean(Leg.throws[player.name])
+            First_9 = np.mean(Leg.leg_throws[player.name])
         
-    def update_averages_p1(self, Leg, Set, Match, player):
-        Leg_average = np.mean(Leg.throws[player.name])
-        Set_average = np.mean(Set.throws[player.name])
-        Match_average = np.mean(Match.throws[player.name])
-        
+    def update_averages_p1(self, data, Leg, Set, Match, player):
+        Leg_average = np.mean(Leg.leg_throws[player.name])
+        Set_average = np.mean(Set.set_throws[player.name])
+        Match_average = np.mean(Match.match_throws[player.name])
         if player.no_throws == 3:
-            First_9 = np.mean(Leg.throws[player.name])
-            self.label_average_first9_p1.config(text = '{:.2f}'.format(First_9))
+            First_9 = []
+            for key in data['legs'].keys():
+                match_counter = data['match_counter']
+                len_match_count = len(str(match_counter))
+                if key[:len_match_count] == str(match_counter):
+                    First_9.append(data['legs'][key].leg_throws[player.name][:3])
+            First_9_mean = np.mean(First_9)
+            self.label_average_first9_p1.config(text = '{:.2f}'.format(First_9_mean))
         
         self.label_average_match_p1.config(text = '{:.2f}'.format(Match_average))
     
-    def update_averages_p2(self, Leg, Set, Match, player):
-        Leg_average = np.mean(Leg.throws[player.name])
-        Set_average = np.mean(Set.throws[player.name])
-        Match_average = np.mean(Match.throws[player.name])
+    def update_averages_p2(self, data, Leg, Set, Match, player):
+        Leg_average = np.mean(Leg.leg_throws[player.name])
+        Set_average = np.mean(Set.set_throws[player.name])
+        Match_average = np.mean(Match.match_throws[player.name])
         
         if player.no_throws == 3:
-            First_9 = np.mean(Leg.throws[player.name])
-            self.label_average_first9_p2.config(text = '{:.2f}'.format(First_9))
+            First_9 = []
+            for key in data['legs'].keys():
+                match_counter = data['match_counter']
+                len_match_count = len(str(match_counter))
+                if key[:len_match_count] == str(match_counter):
+                    First_9.append(data['legs'][key].leg_throws[player.name][:3])
+            First_9_mean = np.mean(First_9)
+            self.label_average_first9_p2.config(text = '{:.2f}'.format(First_9_mean))
         
         self.label_average_match_p2.config(text = '{:.2f}'.format(Match_average))
 
@@ -412,24 +440,40 @@ class MyGUI:
         self.depositlabel1.config(text = self.labelText)
         self.label_player1.config(text = self.labelText)
         
+    	self.lp1_average.config(text = self.labelText)
+    	self.lp1_high.config(text = self.labelText)
+    	self.lp1_finish.config(text = self.labelText)
+        
         self.player1 = Darters(self.depositEntry1.get())
         print(self.labelText)
+        
+        self.depositEntry2.focus_set()
     
     def depositCallBack2(self,event):
         self.labelText = self.depositEntry2.get()
         self.depositlabel2.config(text = self.labelText)
         self.label_player2.config(text = self.labelText)
+
+    	self.lp2_average.config(text = self.labelText)
+    	self.lp2_high.config(text = self.labelText)
+    	self.lp2_finish.config(text = self.labelText)
         
         self.player2 = Darters(self.depositEntry2.get())
         print(self.labelText)
         
+        self.button1.focus_set()
+        
     def depositCallBack3(self,event):
+        if self.match_ongoing == False:
+            print "Start a new match"
+            return
+        
         if self.player1.no_throws > self.player2.no_throws:
             print "It's not your turn!"
             return
         
         throw = int(event.widget.get())
-        if throw < 0 or throw > 180:
+        if throw < 0 or throw > 180 or throw in self.imp_throws:
             print 'No!'
         else:
             self.cycle_label_text()
@@ -438,53 +482,39 @@ class MyGUI:
             self.depositlabel3.insert(END, self.labelText)
             event.widget.delete(0, 'end')
             
-            self.Current_leg.throws[self.player1.name].append(throw)
-            self.Current_set.throws[self.player1.name].append(throw)
-            self.Current_match.throws[self.player1.name].append(throw)
+            self.data['legs'][self.leg_id_db].leg_throws[self.player1.name].append(throw)
+            self.data['sets'][self.set_id_db].set_throws[self.player1.name].append(throw)
+            self.data['matches'][self.match_id].match_throws[self.player1.name].append(throw)
             
             if self.player1.score != 0:
                 self.player1.no_throws += 1
-                self.calculate_averages(self.Current_leg, self.Current_set, self.Current_match, self.player1)
+                self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
                 self.depositEntry4.focus_set()
                 self.check_throw_stats_p1(throw, self.player1)
-                self.update_averages_p1(self.Current_leg, self.Current_set, self.Current_match, self.player1)
+                self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
             
             else:
                 self.check_finish_stats_p1(throw, self.player1)
                 self.check_throw_stats_p1(throw, self.player1)
-                self.player1.no_throws += 1
-                self.calculate_averages(self.Current_leg, self.Current_set, self.Current_match, self.player1)
-                self.update_averages_p1(self.Current_leg, self.Current_set, self.Current_match, self.player1)
-                self.Current_leg.finish = throw
-                self.Current_leg.is_finished = True
-                self.Current_leg.won_by = self.player1.name
-                self.Current_leg.lost_by = [loser.name for loser in self.players if loser != self.player1]
+                self.player2.no_throws = 0
+                self.player1.no_throws = 0
+                self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
+                self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
+                self.data['legs'][self.leg_id_db].finish = throw
+                self.data['legs'][self.leg_id_db].is_finished = True
+                self.data['legs'][self.leg_id_db].won_by = self.player1.name
+                self.data['legs'][self.leg_id_db].lost_by = [loser.name for loser in self.players if loser != self.player1]
             
-                self.data['legs'][self.leg_id_db] = self.Current_leg
-            
-                # save_data(self.data,fname)
-                
-                print self.leg_id_db, self.Current_leg.won_by, self.Current_leg.throws
-                for key in self.data['legs'].keys():
-                    print key, self.data['legs'][key].throws
                 save_data(self.data,fname)
-                print self.data['legs'][self.leg_id_db].throws
-                
-                with open(fname, 'rb') as fp:
-                    data2 = pickle.load(fp)
-                for key in data2['legs'].keys():
-                    print key, data2['legs'][key].throws
             
                 self.leg_counter += 1
                 self.player1.legs += 1
             
                 if self.player1.legs == bo_legs:
                 
-                    self.Current_set.is_finished = True
-                    self.Current_set.won_by = self.player1.name
-                    self.Current_set.lost_by = [loser.name for loser in self.players if loser != self.player1]
-                
-                    self.data['sets'][self.set_id_db] = self.Current_set
+                    self.data['sets'][self.set_id_db].is_finished = True
+                    self.data['sets'][self.set_id_db].won_by = self.player1.name
+                    self.data['sets'][self.set_id_db].lost_by = [loser.name for loser in self.players if loser != self.player1]
                 
                     save_data(self.data,fname)
                 
@@ -497,16 +527,16 @@ class MyGUI:
                 
                     if self.player1.sets == bo_sets:
                     
-                        self.Current_match.is_finished = True
-                        self.Current_match.won_by = self.player1.name
-                        self.Current_match.lost_by = [loser.name for loser in self.players if loser != self.player1]
-                    
-                        self.data['matches'][self.match_id] = self.Current_match
+                        self.data['matches'][self.match_id].is_finished = True
+                        self.data['matches'][self.match_id].won_by = self.player1.name
+                        self.data['matches'][self.match_id].lost_by = [loser.name for loser in self.players if loser != self.player1]
                     
                         save_data(self.data,fname)
                     
-                        match_ongoing = False
+                        self.match_ongoing = False
                         print '%s has won the game!' % self.player1.name
+                        
+                        self.button1.focus_set()
                         ## Hier moet misschien nog iets van een break!
                     else:
                         score_reset(self.players)
@@ -518,13 +548,13 @@ class MyGUI:
                         self.set_id += 1
                         self.set_id_db = str(self.match_id) + '.' + str(self.set_id)
 
-                        self.Current_set = Set(self.set_id_db, bo_legs)
-                        self.Current_set.save_throws(self.players)
+                        self.data['sets'][self.set_id_db] = Set(self.set_id_db, bo_legs)
+                        self.data['sets'][self.set_id_db].save_set_throws(self.players)
                     
                         self.leg_id_db = str(self.match_id) + '.' + str(self.set_id) + '.' + str(self.leg_id)
             
-                        self.Current_leg = Leg(self.leg_id_db)
-                        self.Current_leg.save_throws(self.players)
+                        self.data['legs'][self.leg_id_db] = Leg(self.leg_id_db)
+                        self.data['legs'][self.leg_id_db].save_leg_throws(self.players)
                     
                         legs_reset(self.players)
                         
@@ -539,8 +569,8 @@ class MyGUI:
                     self.leg_id += 1
                     self.leg_id_db = str(self.match_id) + '.' + str(self.set_id) + '.' + str(self.leg_id)
             
-                    self.Current_leg = Leg(self.leg_id_db)
-                    self.Current_leg.save_throws(self.players)
+                    self.data['legs'][self.leg_id_db] = Leg(self.leg_id_db)
+                    self.data['legs'][self.leg_id_db].save_leg_throws(self.players)
                 
                     score_reset(self.players)
                     self.change_number_label(self.player1.legs, self.label_player1_legs)
@@ -554,12 +584,16 @@ class MyGUI:
                     print '%s has won the leg %s!' % (self.player1.name, self.leg_counter)
     
     def depositCallBack4(self,event):
+        if self.match_ongoing == False:
+            print "Start a new match"
+            return
+        
         if self.player2.no_throws > self.player1.no_throws:
             print "It's not your turn!"
             return
         
         throw = int(event.widget.get())
-        if throw < 0 or throw > 180:
+        if throw < 0 or throw > 180 or throw in self.imp_throws:
             print 'No!'
         else:
             self.cycle_label_text()
@@ -568,51 +602,40 @@ class MyGUI:
             self.depositlabel4.insert(END, self.labelText)
             event.widget.delete(0, 'end')
             
-            self.Current_leg.throws[self.player2.name].append(throw)
-            self.Current_set.throws[self.player2.name].append(throw)
-            self.Current_match.throws[self.player2.name].append(throw)
+            self.data['legs'][self.leg_id_db].leg_throws[self.player2.name].append(throw)
+            self.data['sets'][self.set_id_db].set_throws[self.player2.name].append(throw)
+            self.data['matches'][self.match_id].match_throws[self.player2.name].append(throw)
             
             if self.player2.score != 0:
                 self.player2.no_throws += 1
                 self.depositEntry3.focus_set()
                 self.check_throw_stats_p2(throw, self.player2)
-                self.calculate_averages(self.Current_leg, self.Current_set, self.Current_match, self.player2)
-                self.update_averages_p2(self.Current_leg, self.Current_set, self.Current_match, self.player2)
+                self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
+                self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
             
             else:
                 self.check_finish_stats_p2(throw, self.player2)
                 self.check_throw_stats_p2(throw, self.player2)
-                self.calculate_averages(self.Current_leg, self.Current_set, self.Current_match, self.player2)
-                self.update_averages_p2(self.Current_leg, self.Current_set, self.Current_match, self.player2)
-                self.player2.no_throws += 1
-                self.Current_leg.finish = throw
-                self.Current_leg.is_finished = True
-                self.Current_leg.won_by = self.player2.name
-                self.Current_leg.lost_by = [loser.name for loser in self.players if loser != self.player2]
+                self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
+                self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
+                self.player2.no_throws = 0
+                self.player1.no_throws = 0
+                self.data['legs'][self.leg_id_db].finish = throw
+                self.data['legs'][self.leg_id_db].is_finished = True
+                self.data['legs'][self.leg_id_db].won_by = self.player2.name
+                self.data['legs'][self.leg_id_db].lost_by = [loser.name for loser in self.players if loser != self.player2]
             
-                self.data['legs'][self.leg_id_db] = self.Current_leg
-                for key in self.data['legs'].keys():
-                    print key, self.data['legs'][key].throws
-                print self.leg_id_db, self.Current_leg.won_by, self.Current_leg.throws
                 save_data(self.data,fname)
-                print self.data['legs'][self.leg_id_db].throws
-                
-                with open(fname, 'rb') as fp:
-                    data2 = pickle.load(fp)
-                for key in data2['legs'].keys():
-                    print key, data2['legs'][key].throws
-            
+
                 self.leg_counter += 1
                 self.player2.legs += 1
             
                 if self.player2.legs == bo_legs:
                 
-                    self.Current_set.is_finished = True
-                    self.Current_set.won_by = self.player2.name
-                    self.Current_set.lost_by = [loser.name for loser in self.players if loser != self.player2]
-                
-                    self.data['sets'][self.set_id_db] = self.Current_set
-                
+                    self.data['sets'][self.set_id_db].is_finished = True
+                    self.data['sets'][self.set_id_db].won_by = self.player2.name
+                    self.data['sets'][self.set_id_db].lost_by = [loser.name for loser in self.players if loser != self.player2]
+                    
                     save_data(self.data,fname)
                 
                     self.leg_counter = 0
@@ -624,16 +647,16 @@ class MyGUI:
                 
                     if self.player2.sets == bo_sets:
                     
-                        self.Current_match.is_finished = True
-                        self.Current_match.won_by = self.player2.name
-                        self.Current_match.lost_by = [loser.name for loser in self.players if loser != self.player2]
-                    
-                        self.data['matches'][self.match_id] = self.Current_match
-                    
+                        self.data['matches'][self.match_id].is_finished = True
+                        self.data['matches'][self.match_id].won_by = self.player2.name
+                        self.data['matches'][self.match_id].lost_by = [loser.name for loser in self.players if loser != self.player2]
+
                         save_data(self.data,fname)
                     
-                        match_ongoing = False
+                        self.match_ongoing = False
                         print '%s has won the game!' % self.player2.name
+                        
+                        self.button1.focus_set()
                         ## Hier moet misschien nog iets van een break!
                     else:
                         score_reset(self.players)
@@ -645,12 +668,13 @@ class MyGUI:
                         self.set_id += 1
                         self.set_id_db = str(self.match_id) + '.' + str(self.set_id)
 
-                        self.Current_set = Set(self.set_id_db, bo_legs)
+                        self.data['sets'][self.set_id_db] = Set(self.set_id_db, bo_legs)
+                        self.data['sets'][self.set_id_db].save_set_throws(self.players)
                     
                         self.leg_id_db = str(self.match_id) + '.' + str(self.set_id) + '.' + str(self.leg_id)
             
-                        self.Current_leg = Leg(self.leg_id_db)
-                        self.Current_leg.save_throws(self.players)
+                        self.data['legs'][self.leg_id_db] = Leg(self.leg_id_db)
+                        self.data['legs'][self.leg_id_db].save_leg_throws(self.players)
                     
                         legs_reset(self.players)
 
@@ -665,8 +689,8 @@ class MyGUI:
                     self.leg_id += 1
                     self.leg_id_db = str(self.match_id) + '.' + str(self.set_id) + '.' + str(self.leg_id)
             
-                    self.Current_leg = Leg(self.leg_id_db)
-                    self.Current_leg.save_throws(self.players)
+                    self.data['legs'][self.leg_id_db] = Leg(self.leg_id_db)
+                    self.data['legs'][self.leg_id_db].save_leg_throws(self.players)
                 
                     score_reset(self.players)
                     self.change_number_label(self.player2.legs, self.label_player2_legs)
@@ -680,28 +704,123 @@ class MyGUI:
                     print '%s has won the leg %s!' % (self.player2.name, self.leg_counter)
     
         
-    def start_dart_match(self):
+    def start_dart_match(self, event):
         self.depositlabel3.delete(0,END)
         self.depositlabel4.delete(0,END)
         self.depositlabel3.insert(END, "501")
         self.depositlabel4.insert(END, "501")
         
+        self.depositEntry3.delete(0,END)
+        self.depositEntry4.delete(0,END)
         self.depositEntry3.focus_set()
-
+        
+        self.label_index = 0
         self.label_text12.set("Throw!")
         self.label_text13.set("Wait for it!")
         
         self.players = [self.player1,self.player2]
-        [self.match_id, self.data, self.Current_match, self.set_id, self.set_id_db, self.Current_set, self.leg_id, self.leg_id_db, self.Current_leg, self.leg_counter, self.set_counter] = dart_match([self.player1,self.player2], bo_legs, bo_sets, data_load)
+        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.leg_counter, self.set_counter, self.match_ongoing, self.imp_throws] = dart_match(self.players, bo_legs, bo_sets, data_load)
+        for player in self.players:
+            player.__init__(name = player.name, matches = player.matches)
         
-        self.change_number_label(self.player1.legs, self.label_player1_legs)
-        self.change_number_label(self.player1.sets, self.label_player1_sets)
-        self.change_number_label(self.player2.legs, self.label_player2_legs)
-        self.change_number_label(self.player2.sets, self.label_player2_sets)
+        self.labels_changing = [
+        	[self.label_player1_sets, self.player1.legs],
+        	[self.label_player1_legs, self.player1.sets],
+        	[self.label_player2_sets, self.player2.legs],
+        	[self.label_player2_legs, self.player2.sets],
+        	[self.lp1_average, self.player1.name],
+        	[self.lp1_high, self.player1.name],
+        	[self.lp1_finish, self.player1.name],
+        	[self.lp2_average, self.player2.name],
+        	[self.lp2_high, self.player2.name],
+        	[self.lp2_finish, self.player2.name],
+        	[self.label_throw60_p1, self.player1.count_60],
+        	[self.label_throw100_p1, self.player1.count_100],
+        	[self.label_throw140_p1, self.player1.count_140],
+        	[self.label_throw180_p1, self.player1.count_180],
+        	[self.label_throw60_p2, self.player2.count_60],
+        	[self.label_throw100_p2, self.player2.count_100],
+        	[self.label_throw140_p2, self.player2.count_140],
+        	[self.label_throw180_p2, self.player2.count_180],
+        	[self.label_finish80_p1, self.player1.finish_80],
+        	[self.label_finish130_p1, self.player1.finish_130],
+        	[self.label_finish130up_p1, self.player1.finish_130up],
+        	[self.label_finish80_p2, self.player2.finish_80],
+        	[self.label_finish130_p2, self.player2.finish_130],
+        	[self.label_finish130up_p2, self.player2.finish_130up],
+        	[self.label_average_match_p1, "0"],
+        	[self.label_average_first9_p1, "0"],
+        	[self.label_average_match_p2, "0"],
+        	[self.label_average_first9_p2,  "0"]
+        ]
+        
+        for item in self.labels_changing:
+            self.change_number_label(item[1], item[0])
+        
+        # self.change_number_label(self.player1.legs, self.label_player1_legs)
+#         self.change_number_label(self.player1.sets, self.label_player1_sets)
+#         self.change_number_label(self.player2.legs, self.label_player2_legs)
+#         self.change_number_label(self.player2.sets, self.label_player2_sets)
+
+    def start_dart_match2(self):
+        self.depositlabel3.delete(0,END)
+        self.depositlabel4.delete(0,END)
+        self.depositlabel3.insert(END, "501")
+        self.depositlabel4.insert(END, "501")
+        
+        self.depositEntry3.delete(0,END)
+        self.depositEntry4.delete(0,END)
+        self.depositEntry3.focus_set()
+        
+        self.label_index = 0
+        self.label_text12.set("Throw!")
+        self.label_text13.set("Wait for it!")
+        
+        self.players = [self.player1,self.player2]
+        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.leg_counter, self.set_counter, self.match_ongoing, self.imp_throws] = dart_match(self.players, bo_legs, bo_sets, data_load)
+        for player in self.players:
+            player.__init__(name = player.name, matches = player.matches)
+        
+        self.labels_changing = [
+        	[self.label_player1_sets, self.player1.legs],
+        	[self.label_player1_legs, self.player1.sets],
+        	[self.label_player2_sets, self.player2.legs],
+        	[self.label_player2_legs, self.player2.sets],
+        	[self.lp1_average, self.player1.name],
+        	[self.lp1_high, self.player1.name],
+        	[self.lp1_finish, self.player1.name],
+        	[self.lp2_average, self.player2.name],
+        	[self.lp2_high, self.player2.name],
+        	[self.lp2_finish, self.player2.name],
+        	[self.label_throw60_p1, self.player1.count_60],
+        	[self.label_throw100_p1, self.player1.count_100],
+        	[self.label_throw140_p1, self.player1.count_140],
+        	[self.label_throw180_p1, self.player1.count_180],
+        	[self.label_throw60_p2, self.player2.count_60],
+        	[self.label_throw100_p2, self.player2.count_100],
+        	[self.label_throw140_p2, self.player2.count_140],
+        	[self.label_throw180_p2, self.player2.count_180],
+        	[self.label_finish80_p1, self.player1.finish_80],
+        	[self.label_finish130_p1, self.player1.finish_130],
+        	[self.label_finish130up_p1, self.player1.finish_130up],
+        	[self.label_finish80_p2, self.player2.finish_80],
+        	[self.label_finish130_p2, self.player2.finish_130],
+        	[self.label_finish130up_p2, self.player2.finish_130up],
+        	[self.label_average_match_p1, "0"],
+        	[self.label_average_first9_p1, "0"],
+        	[self.label_average_match_p2, "0"],
+        	[self.label_average_first9_p2,  "0"]
+        ]
+        
+        for item in self.labels_changing:
+            self.change_number_label(item[1], item[0])
+        
+        # self.change_number_label(self.player1.legs, self.label_player1_legs)
+#         self.change_number_label(self.player1.sets, self.label_player1_sets)
+#         self.change_number_label(self.player2.legs, self.label_player2_legs)
+#         self.change_number_label(self.player2.sets, self.label_player2_sets)
 
 if __name__ == "__main__":
-    #player1 = Darters(raw_input("Player1: "))
-    #player2 = Darters(raw_input("Player2: "))
 
     bo_legs = int(raw_input("Best of legs: "))
     bo_sets = int(raw_input("Best of sets: "))
@@ -714,8 +833,5 @@ if __name__ == "__main__":
     else:
         data_load = AutoVivification()
         data_load['match_counter'] = 0
-    
-    for key in data_load['legs'].keys():
-        print key, data_load['legs'][key].throws
     
     myGUI = MyGUI()
