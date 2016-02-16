@@ -19,6 +19,117 @@ New update 09-02-2016:
     11. Pop-ups when doing something wrong
 
 """
+def check_bull(value, mult):
+    if value == 50:
+        val = 'Bullseye'
+    elif value == 25:
+        val = 'Bull'
+    elif mult == 'D':
+        val = mult + str(value/2)
+    elif mult == 'T':
+        val = mult + str(value/3)
+    elif mult == 'S':
+        val = str(value)
+    return val
+
+def find_finishes(score):
+    preference = [40, 32, 16, 8]
+    diction = AutoVivification()
+    singles = []
+    doubles = []
+    triples = []
+    for mult in ['S', 'D', 'T']:
+        for num in range(1,21):
+            key = mult + str(num)
+            if mult == 'S':
+                diction[str(num)] = num
+                singles.append(num)
+            elif mult == 'D':
+                diction[key] = num * 2
+                doubles.append(num*2)
+            elif mult == 'T':
+                diction[key] = num * 3
+                triples.append(num*3)
+    doubles.append(50)
+    singles = singles + [25,50]
+    all_throws =  singles + doubles + triples
+
+    if score in doubles:
+        num = score/2
+        key = 'D' + str(num)
+        print key, score
+        return key
+        
+    top_val = 0
+    top_num = 0
+    top_key = None
+    for value in reversed(all_throws):
+        for num in doubles:
+            val2 = check_bull(num, 'D')
+            if score == value + num:
+                if value in singles:
+                    val1 = check_bull(value, 'S')
+                    key = val1 + ', ' + val2
+                elif value in triples:
+                    val1 = check_bull(value, 'T')
+                    key = val1 + ', ' + val2
+                elif value in doubles:
+                    val1 = check_bull(value, 'D')
+                    key = val1 + ', ' + val2
+                if (val1 > top_val and top_num not in preference) or (num in preference and num > top_num):
+                    top_val = val1
+                    top_key = key
+                    if num in preference:
+                        top_num = num
+    
+    if top_key == None:
+        top_val1 = 0
+        top_val2 = 0
+        top_num = 0
+        for value1 in reversed(all_throws):
+            for value2 in reversed(all_throws):
+                for num in doubles:
+                    val3 = check_bull(num, 'D')
+                    if score == value1 + value2 + num:
+                        if value1 in triples:
+                            val1 = check_bull(value1, 'T')
+                            if value2 in singles:
+                                val2 = check_bull(value2, 'S')
+                                key = val1 + ', ' + val2 + ', ' + val3
+                            elif value2 in doubles:
+                                val2 = check_bull(value2, 'D')
+                                key = val1 + ', ' + val2 + ', ' + val3
+                            elif value2 in triples:
+                                val2 = check_bull(value2, 'T')
+                                key = val1 + ', ' + val2 + ', ' + val3
+                            if (value1 > top_val1 and value2 > top_val2 and top_num not in preference) or (num in preference and num > top_num):
+                                top_val1 = value1
+                                top_val2 = value2
+                                if num in preference:
+                                    top_num = num
+                                top_key = key
+                            
+                        elif value1 in doubles:
+                            val1 = check_bull(value1, 'D')
+                            if value2 in singles:
+                                val2 = check_bull(value2, 'S')
+                                key = val1 + ', ' + val2 + ', ' + val3
+                            elif value2 in doubles:
+                                val2 = check_bull(value2, 'D')
+                                key = val1 + ', ' + val2 + ', ' + val3
+                            elif value2 in triples:
+                                val2 = check_bull(value2, 'T')
+                                key = val1 + ', ' + val2 + ', ' + val3
+                            if (value1 > top_val1 and value2 > top_val2 and top_num not in preference) or (num in preference and num > top_num):
+                                top_val1 = value1
+                                top_val2 = value2
+                                if num in preference:
+                                    top_num = num
+                                top_key = key
+    
+    if top_key == None:
+        top_key = "Not yet"                            
+    return top_key
 
 """ darten """
 
@@ -161,63 +272,99 @@ class MyGUI:
     def __init__(self):
         self.__mainWindow = Tk()
         # self.__mainWindow.after(1, lambda:self.__mainWindow.focus_force())
-        #self.fram1 = Frame(self.__mainWindow)
         
-        self.button1 = ttk.Button(self.__mainWindow, text = "Start new match",command = self.start_dart_match2, takefocus = 1)
+        ######################
+        ### Settings frame ###
+        ######################
+        
+        self.settings_frame = Frame(self.__mainWindow)
+        
+        self.labelText = 'User name player 1'
+        self.label1 = Label(self.settings_frame, text = self.labelText)
+        self.labelText2 = 'User name player 2'
+        self.label2 = Label(self.settings_frame, text = self.labelText2)
+    
+        self.depositlabel1 = Label(self.settings_frame, text = 'Player 1')
+        self.depositlabel2 = Label(self.settings_frame, text = 'Player 2')
+    
+        self.depositEntry1 = Entry(self.settings_frame, width = 10)
+        self.depositEntry1.focus_set()
+        self.depositEntry1.bind('<Return>', self.depositCallBack1)
+        self.depositEntry2 = Entry(self.settings_frame, width = 10)
+        self.depositEntry2.bind('<Return>', self.depositCallBack2)
+        
+        self.no_legs = StringVar()
+        self.no_legs.set("Number of legs: ")
+        self.label_legs = Label(self.settings_frame, textvariable=self.no_legs)
+        self.no_sets = StringVar()
+        self.no_sets.set("Number of sets: ")
+        self.label_sets = Label(self.settings_frame, textvariable=self.no_sets)
+        
+        self.depositEntry5 = Entry(self.settings_frame, width = 10)
+        self.depositEntry5.bind('<Return>', self.depositCallBack5)
+        self.depositEntry6 = Entry(self.settings_frame, width = 10)
+        self.depositEntry6.bind('<Return>', self.depositCallBack6)
+        
+        self.button1 = ttk.Button(self.settings_frame, text = "Start new match",command = self.start_dart_match2, takefocus = 1)
         self.button1.bind('<Return>', self.start_dart_match)
         # self.button1.bind('<Button-1>', self.start_dart_match)
         
-        self.labelText = 'User name player 1'
-        self.label1 = Label(self.__mainWindow, text = self.labelText)
-        self.labelText2 = 'User name player 2'
-        self.label2 = Label(self.__mainWindow, text = self.labelText2)
-    
-        self.depositlabel1 = Label(self.__mainWindow, text = 'Player 1')
-        self.depositlabel2 = Label(self.__mainWindow, text = 'Player 2')
+        self.button1.grid(row = 3, column = 2, columnspan = 2, sticky=N)
         
-        self.label_text12 = StringVar()
-        self.label_text12.set("Throw!")
-        self.label12 = Label(self.__mainWindow, textvariable=self.label_text12)
-        self.label_text13 = StringVar()
-        self.label_text13.set("Wait for it!")
-        self.label13 = Label(self.__mainWindow, textvariable=self.label_text13)
-        
-        self.depositlabel3 = Listbox(self.__mainWindow, width = 10)
-        self.depositlabel4 = Listbox(self.__mainWindow, width = 10)
-    
-        self.depositEntry1 = Entry(self.__mainWindow, width = 10)
-        self.depositEntry1.focus_set()
-        self.depositEntry1.bind('<Return>', self.depositCallBack1)
-        self.depositEntry2 = Entry(self.__mainWindow, width = 10)
-        self.depositEntry2.bind('<Return>', self.depositCallBack2)
-        
-        self.depositEntry3 = Entry(self.__mainWindow, width = 10)
-        self.depositEntry3.bind('<Return>', lambda widget=self.depositEntry3: self.depositCallBack3(widget))
-        self.depositEntry4 = Entry(self.__mainWindow, width = 10)
-        self.depositEntry4.bind('<Return>', lambda widget=self.depositEntry4: self.depositCallBack4(widget))
-    
-        self.depositlabel1.grid(row = 1, column = 1, columnspan=2, sticky=W)
-        self.depositlabel2.grid(row = 1, column = 3, columnspan=2, sticky=E)
-        self.label1.grid(row = 2, column = 1, columnspan=2, sticky=W)
-        self.label2.grid(row = 2, column = 3, columnspan=2, sticky=E)
+        self.depositlabel1.grid(row = 1, column = 1, sticky=W)
+        self.depositlabel2.grid(row = 1, column = 4, sticky=E)
+        self.label1.grid(row = 2, column = 1, sticky=W)
+        self.label2.grid(row = 2, column = 4, sticky=E)
         self.depositEntry1.grid(row = 3,column = 1)
         self.depositEntry2.grid(row = 3,column = 4)
         
-        self.label12.grid(row = 4, column = 1, columnspan = 2)
-        self.label13.grid(row = 4, column = 3, columnspan = 2)
+        self.label_legs.grid(row = 1, column = 2)
+        self.label_sets.grid(row = 2, column = 2)
+        self.depositEntry5.grid(row = 1, column = 3)
+        self.depositEntry6.grid(row = 2, column = 3)
         
-        self.depositlabel3.grid(row = 5,column = 1)
-        self.depositlabel4.grid(row = 5,column = 3)
-        self.depositEntry3.grid(row = 5,column = 2, sticky=E)
-        self.depositEntry4.grid(row = 5,column = 4, sticky=E)
+        ##########################
+        ### Score keeper frame ###
+        ##########################
+        self.score_keeper_frame = Frame(self.__mainWindow)
         
-        self.button1.grid(row = 4, column = 5, columnspan = 2, sticky=N)
+        self.label_text12 = StringVar()
+        self.label_text12.set("Throw!")
+        self.label12 = Label(self.score_keeper_frame, textvariable=self.label_text12)
+        self.label_text13 = StringVar()
+        self.label_text13.set("Wait for it!")
+        self.label13 = Label(self.score_keeper_frame, textvariable=self.label_text13)
+        
+        self.possible_finish_p1 = StringVar()
+        self.possible_finish_p1.set("Not yet")
+        self.label_out1 = Label(self.score_keeper_frame, textvariable=self.possible_finish_p1)
+        self.possible_finish_p2 = StringVar()
+        self.possible_finish_p2.set("Not yet")
+        self.label_out2 = Label(self.score_keeper_frame, textvariable=self.possible_finish_p2)
+        
+        self.depositEntry3 = Entry(self.score_keeper_frame, width = 10)
+        self.depositEntry3.bind('<Return>', lambda widget=self.depositEntry3: self.depositCallBack3(widget))
+        self.depositEntry4 = Entry(self.score_keeper_frame, width = 10)
+        self.depositEntry4.bind('<Return>', lambda widget=self.depositEntry4: self.depositCallBack4(widget))
+        
+        self.depositlabel3 = Listbox(self.score_keeper_frame, width = 10)
+        self.depositlabel4 = Listbox(self.score_keeper_frame, width = 10)
+        
+        self.label12.grid(row = 1, column = 1, columnspan = 2)
+        self.label13.grid(row = 1, column = 3, columnspan = 2)
+        
+        self.depositlabel3.grid(row = 2,column = 1)
+        self.depositlabel4.grid(row = 2,column = 3)
+        self.depositEntry3.grid(row = 2,column = 2, sticky=E)
+        self.depositEntry4.grid(row = 2,column = 4, sticky=E)
+        
+        self.label_out1.grid(row = 3, column = 1, columnspan = 2)
+        self.label_out2.grid(row = 3, column = 3, columnspan = 2)
         
         ###################
         ### Score frame ###
         ###################
         self.score_frame = Frame(self.__mainWindow)
-        self.score_frame.grid(row = 1, rowspan = 3, column = 6)
         
         self.label_sets = Label(self.score_frame, text = 'Sets: ')
         self.label_legs = Label(self.score_frame, text = 'Legs: ')
@@ -245,7 +392,6 @@ class MyGUI:
         ### Stats frame ###
         ###################
         self.stats_frame = Frame(self.__mainWindow)
-        self.stats_frame.grid(row = 5, rowspan = 3, column = 6)
         
         self.average_frame = Frame(self.stats_frame)
         self.average_frame.grid(row = 1,column = 1)
@@ -332,6 +478,15 @@ class MyGUI:
         self.label_finish130_p2.grid(row = 3, column = 3)
         self.label_finish130up_p2.grid(row = 3, column = 4)
         
+        ##############################
+        ### Setting up main window ###
+        ##############################
+
+        self.settings_frame.grid(row = 1, column = 1)
+        self.score_keeper_frame.grid(row = 3, column = 1)
+        self.score_frame.grid(row = 1, column = 3)
+        self.stats_frame.grid(row = 3, column = 3)        
+        
         mainloop()
 
     def change_number_label(self, text, label):
@@ -394,34 +549,37 @@ class MyGUI:
         if player.no_throws == 3:
             First_9 = np.mean(Leg.leg_throws[player.name])
         
-    def update_averages_p1(self, data, Leg, Set, Match, player):
+    def update_averages_p1(self, data, Leg, Set, Match, player, BelowNine):
         Leg_average = np.mean(Leg.leg_throws[player.name])
         Set_average = np.mean(Set.set_throws[player.name])
         Match_average = np.mean(Match.match_throws[player.name])
-        if player.no_throws == 3:
+        
+        if player.no_throws == 3 or BelowNine == 'Y':
             First_9 = []
             for key in data['legs'].keys():
                 match_counter = data['match_counter']
                 len_match_count = len(str(match_counter))
                 if key[:len_match_count] == str(match_counter):
-                    First_9.append(data['legs'][key].leg_throws[player.name][:3])
+                    First_9 += data['legs'][key].leg_throws[player.name][:3]
+            
             First_9_mean = np.mean(First_9)
             self.label_average_first9_p1.config(text = '{:.2f}'.format(First_9_mean))
         
         self.label_average_match_p1.config(text = '{:.2f}'.format(Match_average))
     
-    def update_averages_p2(self, data, Leg, Set, Match, player):
+    def update_averages_p2(self, data, Leg, Set, Match, player, BelowNine):
         Leg_average = np.mean(Leg.leg_throws[player.name])
         Set_average = np.mean(Set.set_throws[player.name])
         Match_average = np.mean(Match.match_throws[player.name])
         
-        if player.no_throws == 3:
+        if player.no_throws == 3 or BelowNine == 'Y':
             First_9 = []
             for key in data['legs'].keys():
                 match_counter = data['match_counter']
                 len_match_count = len(str(match_counter))
                 if key[:len_match_count] == str(match_counter):
-                    First_9.append(data['legs'][key].leg_throws[player.name][:3])
+                    First_9 += data['legs'][key].leg_throws[player.name][:3]
+            
             First_9_mean = np.mean(First_9)
             self.label_average_first9_p2.config(text = '{:.2f}'.format(First_9_mean))
         
@@ -445,7 +603,6 @@ class MyGUI:
     	self.lp1_finish.config(text = self.labelText)
         
         self.player1 = Darters(self.depositEntry1.get())
-        print(self.labelText)
         
         self.depositEntry2.focus_set()
     
@@ -459,9 +616,20 @@ class MyGUI:
     	self.lp2_finish.config(text = self.labelText)
         
         self.player2 = Darters(self.depositEntry2.get())
-        print(self.labelText)
         
         self.button1.focus_set()
+        
+    def depositCallBack5(self,event):
+        self.no_legs.set("Number of legs: %s" % self.depositEntry5.get())
+        self.bo_legs = int(self.depositEntry5.get())
+        self.depositEntry5.delete(0,END)
+        self.depositEntry6.focus_set()
+        
+    def depositCallBack6(self,event):
+        self.no_sets.set("Number of sets: %s" % self.depositEntry6.get())
+        self.bo_sets = int(self.depositEntry6.get())
+        self.depositEntry6.delete(0,END)
+        self.depositEntry1.focus_set()
         
     def depositCallBack3(self,event):
         if self.match_ongoing == False:
@@ -475,6 +643,7 @@ class MyGUI:
         throw = int(event.widget.get())
         if throw < 0 or throw > 180 or throw in self.imp_throws:
             print 'No!'
+            event.widget.delete(0,END)
         else:
             self.cycle_label_text()
             self.player1.score, throw = score_keeper(self.player1.score, throw)
@@ -491,26 +660,32 @@ class MyGUI:
                 self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
                 self.depositEntry4.focus_set()
                 self.check_throw_stats_p1(throw, self.player1)
-                self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
+                self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1, 'N')
+                self.possible_finish_p1.set(find_finishes(self.player1.score))
             
             else:
+                self.player1.no_throws += 1
                 self.check_finish_stats_p1(throw, self.player1)
                 self.check_throw_stats_p1(throw, self.player1)
-                self.player2.no_throws = 0
-                self.player1.no_throws = 0
                 self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
-                self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
+                self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1, 'N')
+                if self.player2.no_throws < 9:
+                    self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2, 'Y')
+
                 self.data['legs'][self.leg_id_db].finish = throw
                 self.data['legs'][self.leg_id_db].is_finished = True
                 self.data['legs'][self.leg_id_db].won_by = self.player1.name
                 self.data['legs'][self.leg_id_db].lost_by = [loser.name for loser in self.players if loser != self.player1]
             
                 save_data(self.data,fname)
+                
+                self.player2.no_throws = 0
+                self.player1.no_throws = 0
             
                 self.leg_counter += 1
                 self.player1.legs += 1
             
-                if self.player1.legs == bo_legs:
+                if self.player1.legs == self.bo_legs:
                 
                     self.data['sets'][self.set_id_db].is_finished = True
                     self.data['sets'][self.set_id_db].won_by = self.player1.name
@@ -525,7 +700,7 @@ class MyGUI:
                     
                     self.change_number_label(self.player1.sets, self.label_player1_sets)
                 
-                    if self.player1.sets == bo_sets:
+                    if self.player1.sets == self.bo_sets:
                     
                         self.data['matches'][self.match_id].is_finished = True
                         self.data['matches'][self.match_id].won_by = self.player1.name
@@ -548,7 +723,7 @@ class MyGUI:
                         self.set_id += 1
                         self.set_id_db = str(self.match_id) + '.' + str(self.set_id)
 
-                        self.data['sets'][self.set_id_db] = Set(self.set_id_db, bo_legs)
+                        self.data['sets'][self.set_id_db] = Set(self.set_id_db, self.bo_legs)
                         self.data['sets'][self.set_id_db].save_set_throws(self.players)
                     
                         self.leg_id_db = str(self.match_id) + '.' + str(self.set_id) + '.' + str(self.leg_id)
@@ -595,6 +770,8 @@ class MyGUI:
         throw = int(event.widget.get())
         if throw < 0 or throw > 180 or throw in self.imp_throws:
             print 'No!'
+            event.widget.delete(0,END)
+            
         else:
             self.cycle_label_text()
             self.player2.score, throw = score_keeper(self.player2.score, throw)
@@ -611,15 +788,18 @@ class MyGUI:
                 self.depositEntry3.focus_set()
                 self.check_throw_stats_p2(throw, self.player2)
                 self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
-                self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
+                self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2, 'N')
+                self.possible_finish_p2.set(find_finishes(self.player2.score))
             
             else:
+                self.player2.no_throws += 1
                 self.check_finish_stats_p2(throw, self.player2)
                 self.check_throw_stats_p2(throw, self.player2)
                 self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
-                self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
-                self.player2.no_throws = 0
-                self.player1.no_throws = 0
+                self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2, 'N')
+                if self.player1.no_throws < 9:
+                    self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1, 'Y')
+                
                 self.data['legs'][self.leg_id_db].finish = throw
                 self.data['legs'][self.leg_id_db].is_finished = True
                 self.data['legs'][self.leg_id_db].won_by = self.player2.name
@@ -627,10 +807,13 @@ class MyGUI:
             
                 save_data(self.data,fname)
 
+                self.player2.no_throws = 0
+                self.player1.no_throws = 0
+
                 self.leg_counter += 1
                 self.player2.legs += 1
             
-                if self.player2.legs == bo_legs:
+                if self.player2.legs == self.bo_legs:
                 
                     self.data['sets'][self.set_id_db].is_finished = True
                     self.data['sets'][self.set_id_db].won_by = self.player2.name
@@ -645,7 +828,7 @@ class MyGUI:
                     
                     self.change_number_label(self.player2.sets, self.label_player2_sets)
                 
-                    if self.player2.sets == bo_sets:
+                    if self.player2.sets == self.bo_sets:
                     
                         self.data['matches'][self.match_id].is_finished = True
                         self.data['matches'][self.match_id].won_by = self.player2.name
@@ -668,7 +851,7 @@ class MyGUI:
                         self.set_id += 1
                         self.set_id_db = str(self.match_id) + '.' + str(self.set_id)
 
-                        self.data['sets'][self.set_id_db] = Set(self.set_id_db, bo_legs)
+                        self.data['sets'][self.set_id_db] = Set(self.set_id_db, self.bo_legs)
                         self.data['sets'][self.set_id_db].save_set_throws(self.players)
                     
                         self.leg_id_db = str(self.match_id) + '.' + str(self.set_id) + '.' + str(self.leg_id)
@@ -719,7 +902,7 @@ class MyGUI:
         self.label_text13.set("Wait for it!")
         
         self.players = [self.player1,self.player2]
-        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.leg_counter, self.set_counter, self.match_ongoing, self.imp_throws] = dart_match(self.players, bo_legs, bo_sets, data_load)
+        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.leg_counter, self.set_counter, self.match_ongoing, self.imp_throws] = dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
         for player in self.players:
             player.__init__(name = player.name, matches = player.matches)
         
@@ -777,7 +960,7 @@ class MyGUI:
         self.label_text13.set("Wait for it!")
         
         self.players = [self.player1,self.player2]
-        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.leg_counter, self.set_counter, self.match_ongoing, self.imp_throws] = dart_match(self.players, bo_legs, bo_sets, data_load)
+        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.leg_counter, self.set_counter, self.match_ongoing, self.imp_throws] = dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
         for player in self.players:
             player.__init__(name = player.name, matches = player.matches)
         
@@ -821,9 +1004,9 @@ class MyGUI:
 #         self.change_number_label(self.player2.sets, self.label_player2_sets)
 
 if __name__ == "__main__":
-
-    bo_legs = int(raw_input("Best of legs: "))
-    bo_sets = int(raw_input("Best of sets: "))
+    #
+    # bo_legs = int(raw_input("Best of legs: "))
+    # bo_sets = int(raw_input("Best of sets: "))
 
     fname = 'database.pkl'
 

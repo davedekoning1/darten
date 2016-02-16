@@ -59,6 +59,64 @@ class Leg():
     def save_throws(self, players):
         for player in players:
             self.throws[player.name] = []
+            
+def find_finishes(score):
+    diction = AutoVivification()
+    singles = []
+    doubles = []
+    triples = []
+    for mult in ['S', 'D', 'T']:
+        for num in range(1,21):
+            key = mult + str(num)
+            if mult == 'S':
+                diction[str(num)] = num
+                singles.append(num)
+            elif mult == 'D':
+                diction[key] = num * 2
+                doubles.append(num*2)
+            elif mult == 'T':
+                diction[key] = num * 3
+                triples.append(num*3)
+    doubles.append(50)
+    singles = singles + [25,50]
+    all_throws =  singles + doubles + triples
+    # for score in range(2,180):
+    if score in doubles:
+        num = score/2
+        key = 'D' + str(num)
+        print key, score
+        
+    
+    for value in all_throws:
+        for num in doubles:
+            if score == value + num:
+                if value in singles:
+                    key = str(value) + ', D' + str(num/2)
+                elif value in doubles:
+                    key = 'D' + str(value/2) + ', D' + str(num/2)
+                elif value in triples:
+                    key = 'T' + str(value/3) + ', D' + str(num/2)
+                print key, score
+    
+    for value1 in all_throws:
+        for value2 in all_throws:
+            for num in doubles:
+                if score == value1 + value2 + num:
+                    if value1 in triples:
+                        if value2 in singles:
+                            key = 'T' + str(value1/3) + ', ' + str(value2) + ', D' + str(num/2)
+                        elif value2 in doubles:
+                            key = 'T' + str(value1/3) + ', D' + str(value2/2) + ', D' + str(num/2)
+                        elif value2 in triples:
+                            key = 'T' + str(value1/3) + ', T' + str(value2/3) + ', D' + str(num/2)
+                    elif value1 in doubles:
+                        if value2 in singles:
+                            key = 'D' + str(value1/2) + ', ' + str(value2) + ', D' + str(num/2)
+                        elif value2 in doubles:
+                            key = 'D' + str(value1/2) + ', D' + str(value2/2) + ', D' + str(num/2)
+                        elif value2 in triples:
+                            key = 'D' + str(value1/2) + ', T' + str(value2/3) + ', D' + str(num/2)
+                    print key, score
 
 def score_keeper(score, throw):
     if score - throw < 2 and score - throw != 0:
