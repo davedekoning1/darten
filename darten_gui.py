@@ -9,7 +9,6 @@ New update 09-02-2016:
     Furthermore the code can possibly be cleaned a fair bit.
     
     ** Still to be added **
-    1. Possible finishes
     2. View of previous matches
     3. More stats/ custom stats
     4. Maybe add a menu for the settings of the match
@@ -175,9 +174,12 @@ class Match():
         self.won_by = None
         self.lost_by = None
         self.match_throws = {}
+        self.players = []
+        self.set_counter = 0
         
     def save_match_throws(self, players):
         for player in players:
+            self.players.append(player.name)
             self.match_throws[player.name] = []
 
 class Set():
@@ -189,6 +191,7 @@ class Set():
         self.won_by = None
         self.lost_by = None
         self.set_throws = {}
+        self.leg_counter = 0
         
     def save_set_throws(self, players):
         for player in players:
@@ -260,12 +263,10 @@ def dart_match(players, bo_legs, bo_sets, data):
     sets_reset(players)
 
     match_ongoing = True
-    leg_counter = 0
-    set_counter = 0
     
     imp_throws = [163, 166, 169, 172, 173, 175, 176, 178, 179]
     
-    return [match_id, data, set_id, set_id_db, leg_id, leg_id_db, leg_counter, set_counter, match_ongoing, imp_throws]
+    return [match_id, data, set_id, set_id_db, leg_id, leg_id_db, match_ongoing, imp_throws]
 
 class MyGUI:
     
@@ -682,7 +683,7 @@ class MyGUI:
                 self.player2.no_throws = 0
                 self.player1.no_throws = 0
             
-                self.leg_counter += 1
+                self.data['sets'][self.set_id_db].leg_counter += 1
                 self.player1.legs += 1
             
                 if self.player1.legs == self.bo_legs:
@@ -693,9 +694,9 @@ class MyGUI:
                 
                     save_data(self.data,fname)
                 
-                    self.leg_counter = 0
+                    self.data['sets'][self.set_id_db].leg_counter = 0
                     self.leg_id = 1
-                    self.set_counter += 1
+                    self.data['matches'][self.match_id].set_counter += 1
                     self.player1.sets += 1
                     
                     self.change_number_label(self.player1.sets, self.label_player1_sets)
@@ -738,7 +739,7 @@ class MyGUI:
                         self.change_number_label(self.player1.legs, self.label_player1_legs)
                         self.change_number_label(self.player2.legs, self.label_player2_legs)
                         
-                        print '%s has won the set %s!' % (self.player1.name, self.set_counter)
+                        print '%s has won the set %s!' % (self.player1.name, self.data['matches'][self.match_id].set_counter)
                 else:
                     
                     self.leg_id += 1
@@ -749,6 +750,8 @@ class MyGUI:
                 
                     score_reset(self.players)
                     self.change_number_label(self.player1.legs, self.label_player1_legs)
+                    self.possible_finish_p1.set("Not yet")
+                    self.possible_finish_p2.set("Not yet")
 
                     self.depositEntry4.focus_set()
                     
@@ -756,7 +759,7 @@ class MyGUI:
                     self.depositlabel4.delete(0,END)
                     self.depositlabel3.insert(END, "501")
                     self.depositlabel4.insert(END, "501")
-                    print '%s has won the leg %s!' % (self.player1.name, self.leg_counter)
+                    print '%s has won the leg %s!' % (self.player1.name, self.data['sets'][self.set_id_db].leg_counter)
     
     def depositCallBack4(self,event):
         if self.match_ongoing == False:
@@ -810,7 +813,7 @@ class MyGUI:
                 self.player2.no_throws = 0
                 self.player1.no_throws = 0
 
-                self.leg_counter += 1
+                self.data['sets'][self.set_id_db].leg_counter += 1
                 self.player2.legs += 1
             
                 if self.player2.legs == self.bo_legs:
@@ -821,9 +824,9 @@ class MyGUI:
                     
                     save_data(self.data,fname)
                 
-                    self.leg_counter = 0
+                    self.data['sets'][self.set_id_db].leg_counter = 0
                     self.leg_id = 1
-                    self.set_counter += 1
+                    self.data['matches'][self.match_id].set_counter += 1
                     self.player2.sets += 1
                     
                     self.change_number_label(self.player2.sets, self.label_player2_sets)
@@ -866,7 +869,7 @@ class MyGUI:
                         self.change_number_label(self.player2.legs, self.label_player2_legs)
                         self.change_number_label(self.player1.legs, self.label_player1_legs)
                         
-                        print '%s has won the set %s!' % (self.player2.name, self.set_counter)
+                        print '%s has won the set %s!' % (self.player2.name, self.data['matches'][self.match_id].set_counter)
                 else:
                     
                     self.leg_id += 1
@@ -878,13 +881,16 @@ class MyGUI:
                     score_reset(self.players)
                     self.change_number_label(self.player2.legs, self.label_player2_legs)
 
+                    self.possible_finish_p1.set("Not yet")
+                    self.possible_finish_p2.set("Not yet")
+                    
                     self.depositEntry3.focus_set()
                     
                     self.depositlabel3.delete(0,END)
                     self.depositlabel4.delete(0,END)
                     self.depositlabel3.insert(END, "501")
                     self.depositlabel4.insert(END, "501")
-                    print '%s has won the leg %s!' % (self.player2.name, self.leg_counter)
+                    print '%s has won the leg %s!' % (self.player2.name, self.data['sets'][self.set_id_db].leg_counter)
     
         
     def start_dart_match(self, event):
@@ -902,9 +908,12 @@ class MyGUI:
         self.label_text13.set("Wait for it!")
         
         self.players = [self.player1,self.player2]
-        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.leg_counter, self.set_counter, self.match_ongoing, self.imp_throws] = dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
+        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.match_ongoing, self.imp_throws] = dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
         for player in self.players:
             player.__init__(name = player.name, matches = player.matches)
+            if player.name not in self.data['player_list']:
+                self.data['player_list'].append(player.name)
+            
         
         self.labels_changing = [
         	[self.label_player1_sets, self.player1.legs],
@@ -960,9 +969,11 @@ class MyGUI:
         self.label_text13.set("Wait for it!")
         
         self.players = [self.player1,self.player2]
-        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.leg_counter, self.set_counter, self.match_ongoing, self.imp_throws] = dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
+        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.match_ongoing, self.imp_throws] = dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
         for player in self.players:
             player.__init__(name = player.name, matches = player.matches)
+            if player.name not in self.data['player_list']:
+                self.data['player_list'].append(player.name)
         
         self.labels_changing = [
         	[self.label_player1_sets, self.player1.legs],
@@ -1016,5 +1027,6 @@ if __name__ == "__main__":
     else:
         data_load = AutoVivification()
         data_load['match_counter'] = 0
+        data_load['player_list'] = []
     
     myGUI = MyGUI()
