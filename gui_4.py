@@ -3,33 +3,30 @@ from Tkinter import *
 number_of_players = range(1,3)
 
 players = {}
-
-
     
-top = Tk()
-L1 = Label(top, text="User Name player 1")
-L1.pack( side = LEFT)
-L1.grid()
+root = Tk()
+L1 = Label(root, text="User Name player 1")
+L1.place(x = 20, y = 20)
 
-L2 = Label(top, text="User name player 2")
-L2.pack( side = RIGHT)
-L2.grid()
+L2 = Label(root, text="User name player 2")
+L2.place(x = 250, y = 20)
 
-E1 = Entry(top, bd =5)
-E1.pack(side = LEFT)
-E1.grid()
+E1 = Entry(root, bd =5)
+E1.place(x = 20, y = 50)
 
-E2 = Entry(top, bd =5)
-E2.pack(side = RIGHT)
-E2.grid()
+E2 = Entry(root, bd =5)
+E2.place(x = 250, y = 50)
 
-def get_input():
-    players['player' + str(player_num)] = E1.get()
+L3 = Label(root, text="Player 1: %s" % E1.get())
+L3.place(x = 20, y = 100)
 
-B1 = Button(top, text = "submit", command = get_input)
-B1.pack( side = RIGHT)
-B1.grid()
+def Button1():
+	listbox.insert(END, "button1 pressed")
 
-top.mainloop()
+button1 = Button(root, text="button1", command = Button1)
 
-print players
+scrollbar = Scrollbar(root, orient=VERTICAL)
+listbox = Listbox(root, yscrollcommand=scrollbar.set)
+scrollbar.configure(command=listbox.yview)
+
+root.mainloop()
