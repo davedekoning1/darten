@@ -57,11 +57,11 @@ def Filling_Overview(name, data):
             all_throws += match.match_throws[name]
             all_averages.append(np.mean(match.match_throws[name]))
             all_dates.append(match.date_tag) ## stull need s to be added to the darten_gui
-            
-            string = "{:8s}{:15s}{:15s}{:15s}{:4i}{:4i}".format((match.match_id, datetime.strftime(match.date_tag,"%Y-%m-%d %H:%M"), name, name_opp, match.bo_sets, match.bo_legs))
+            #print (match.match_id, datetime.strftime(match.date_tag,"%Y-%m-%d %H:%M"), name, name_opp, match.bo_sets, match.bo_legs)
+            string = '{:<4d}{:<20s}{:<10s}{:<10s}{:>3d}{:>3d}'.format(match.match_id, datetime.strftime(match.date_tag,"%Y-%m-%d %H:%M"), name, name_opp, match.bo_sets, match.bo_legs)
             list_of_strings.append(string)
             
-    return list_of_strings
+    return [list_of_strings, all_averages]
 
 if __name__ == "__main__":
     fname = 'database.pkl'
