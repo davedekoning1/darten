@@ -135,6 +135,7 @@ def find_finishes(score):
 import pickle
 import os
 import numpy as np
+from datetime import datetime
 from Tkinter import *
 import ttk
 
@@ -176,6 +177,8 @@ class Match():
         self.match_throws = {}
         self.players = []
         self.set_counter = 0
+        #self.date_tag = datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M")
+        self.date_tag = datetime.now()
         
     def save_match_throws(self, players):
         for player in players:
