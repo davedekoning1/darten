@@ -56,7 +56,6 @@ def find_finishes(score):
     if score in doubles:
         num = score/2
         key = 'D' + str(num)
-        print key, score
         return key
         
     top_val = 0
@@ -135,6 +134,7 @@ def find_finishes(score):
 import pickle
 import os
 import numpy as np
+from datetime import datetime
 from Tkinter import *
 import ttk
 
@@ -176,6 +176,8 @@ class Match():
         self.match_throws = {}
         self.players = []
         self.set_counter = 0
+        #self.date_tag = datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M")
+        self.date_tag = datetime.now()
         
     def save_match_throws(self, players):
         for player in players:
@@ -702,6 +704,11 @@ class MyGUI:
                     self.change_number_label(self.player1.sets, self.label_player1_sets)
                 
                     if self.player1.sets == self.bo_sets:
+                        
+                        legs_reset(self.players)
+                        
+                        self.change_number_label(self.player1.legs, self.label_player1_legs)
+                        self.change_number_label(self.player2.legs, self.label_player2_legs)
                     
                         self.data['matches'][self.match_id].is_finished = True
                         self.data['matches'][self.match_id].won_by = self.player1.name
