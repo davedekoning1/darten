@@ -56,7 +56,6 @@ def find_finishes(score):
     if score in doubles:
         num = score/2
         key = 'D' + str(num)
-        print key, score
         return key
         
     top_val = 0
@@ -705,6 +704,11 @@ class MyGUI:
                     self.change_number_label(self.player1.sets, self.label_player1_sets)
                 
                     if self.player1.sets == self.bo_sets:
+                        
+                        legs_reset(self.players)
+                        
+                        self.change_number_label(self.player1.legs, self.label_player1_legs)
+                        self.change_number_label(self.player2.legs, self.label_player2_legs)
                     
                         self.data['matches'][self.match_id].is_finished = True
                         self.data['matches'][self.match_id].won_by = self.player1.name
@@ -835,7 +839,12 @@ class MyGUI:
                     self.change_number_label(self.player2.sets, self.label_player2_sets)
                 
                     if self.player2.sets == self.bo_sets:
-                    
+                        
+                        legs_reset(self.players)
+                        
+                        self.change_number_label(self.player1.legs, self.label_player1_legs)
+                        self.change_number_label(self.player2.legs, self.label_player2_legs)
+                                                
                         self.data['matches'][self.match_id].is_finished = True
                         self.data['matches'][self.match_id].won_by = self.player2.name
                         self.data['matches'][self.match_id].lost_by = [loser.name for loser in self.players if loser != self.player2]
