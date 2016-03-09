@@ -356,13 +356,16 @@ class MyGUI:
         self.label12.grid(row = 1, column = 1, columnspan = 2)
         self.label13.grid(row = 1, column = 3, columnspan = 2)
         
-        self.depositlabel3.grid(row = 2,column = 1)
-        self.depositlabel4.grid(row = 2,column = 3)
+        self.depositlabel3.grid(row = 2,column = 1, rowspan = 2)
+        self.depositlabel4.grid(row = 2,column = 3, rowspan = 2)
         self.depositEntry3.grid(row = 2,column = 2, sticky=E)
         self.depositEntry4.grid(row = 2,column = 4, sticky=E)
         
-        self.label_out1.grid(row = 3, column = 1, columnspan = 2)
-        self.label_out2.grid(row = 3, column = 3, columnspan = 2)
+        self.label_out1.grid(row = 4, column = 1, columnspan = 2)
+        self.label_out2.grid(row = 4, column = 3, columnspan = 2)
+        
+        self.create_button(self.score_keeper_frame, 'Undo', self.delete_entry1, row = 3, column = 2, rowspan = 1, columnspan = 1)
+        self.create_button(self.score_keeper_frame, 'Undo', self.delete_entry2, row = 3, column = 4, rowspan = 1, columnspan = 1)
         
         ###################
         ### Score frame ###
@@ -491,23 +494,102 @@ class MyGUI:
         self.stats_frame.grid(row = 3, column = 3)        
         
         mainloop()
-
+    
+    def create_button(self, parent, text, command, row, column, rowspan, columnspan):
+        new_button = ttk.Button(parent, text = text, command = command)
+        new_button.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan)
+    
+    def create_frame(self, parent, row, column, rowspan, columnspan):
+        new_frame = Frame(parent)
+        new_frame.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan)
+        return new_frame
+    
+    def create_listbox(self, parent, row, column, rowspan, columnspan, width):
+        new_listbox = Listbox(parent, width = width)
+        new_listbox.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan)
+        new_listbox.bind('<<ListboxSelect>>', self.onselect)
+        return new_listbox
+        
+    def delete_entry1(self):
+        throw = int(self.depositlabel3.get(END).split()[-1])
+        self.depositlabel3.delete(END)
+        self.cycle_label_text()
+        self.player1.no_throws -= 1
+        
+        del self.data['legs'][self.leg_id_db].leg_throws[self.player1.name][-1]
+        del self.data['sets'][self.set_id_db].set_throws[self.player1.name][-1]
+        del self.data['matches'][self.match_id].match_throws[self.player1.name][-1]
+        
+        self.depositEntry3.focus_set()
+        self.check_throw_stats_p1(throw, self.player1, 'remove')
+        self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1, 'N')
+        self.player1.score += throw
+        
+    def delete_entry2(self):
+        throw = int(self.depositlabel4.get(END).split()[-1])
+        self.depositlabel4.delete(END)
+        self.cycle_label_text()
+        self.player2.no_throws -= 1
+        
+        del self.data['legs'][self.leg_id_db].leg_throws[self.player2.name][-1]
+        del self.data['sets'][self.set_id_db].set_throws[self.player2.name][-1]
+        del self.data['matches'][self.match_id].match_throws[self.player2.name][-1]
+        
+        self.depositEntry4.focus_set()
+        self.check_throw_stats_p2(throw, self.player2, 'remove')
+        self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2, 'N')
+        self.player2.score += throw
+        
+    def create_labels(self, parent, row, column, rowspan, columnspan, width, var, textvariable, text):
+        
+        if var == True:
+            textvar = StringVar()
+            textvar.set(textvariable)
+            new_label = Label(parent, textvariable = textvar)
+        else:
+            new_label = Label(parent, text = text)
+        
+        new_label.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan, sticky = EW)
+        
+        return new_label
+    
+    def add_to_label_dict(self, dct, col, row, text):
+        c_frame = self.frames['graph_frame']
+        name = col + (row - 1) * 3
+        dct[name] = dict(name=name, parent=c_frame, row=row, column=col, text=text)
+        return dct
+    
     def change_number_label(self, text, label):
         label.config(text = str(text))
         
-    def check_throw_stats_p1(self, throw, player):
-        if throw == 180:
-            player.count_180 += 1
-            self.label_throw180_p1.config(text = str(player.count_180))
-        elif throw >= 140:
-            player.count_140 += 1
-            self.label_throw140_p1.config(text = str(player.count_140))
-        elif throw >= 100:
-            player.count_100 += 1
-            self.label_throw100_p1.config(text = str(player.count_100))
-        elif throw >= 60:
-            player.count_60 += 1
-            self.label_throw60_p1.config(text = str(player.count_60))
+    def check_throw_stats_p1(self, throw, player, remove=None):
+        if remove == 'remove':
+            if throw == 180:
+                player.count_180 -= 1
+                self.label_throw180_p1.config(text = str(player.count_180))
+            elif throw >= 140:
+                player.count_140 -= 1
+                self.label_throw140_p1.config(text = str(player.count_140))
+            elif throw >= 100:
+                player.count_100 -= 1
+                self.label_throw100_p1.config(text = str(player.count_100))
+            elif throw >= 60:
+                player.count_60 -= 1
+                self.label_throw60_p1.config(text = str(player.count_60))
+                
+        else:
+            if throw == 180:
+                player.count_180 += 1
+                self.label_throw180_p1.config(text = str(player.count_180))
+            elif throw >= 140:
+                player.count_140 += 1
+                self.label_throw140_p1.config(text = str(player.count_140))
+            elif throw >= 100:
+                player.count_100 += 1
+                self.label_throw100_p1.config(text = str(player.count_100))
+            elif throw >= 60:
+                player.count_60 += 1
+                self.label_throw60_p1.config(text = str(player.count_60))
             
     def check_finish_stats_p1(self, throw, player):
         if throw >= 130:
@@ -520,19 +602,34 @@ class MyGUI:
             player.finish_80 += 1
             self.label_finish80_p1.config(text = str(player.finish_80))
     
-    def check_throw_stats_p2(self, throw, player):
-        if throw == 180:
-            player.count_180 += 1
-            self.label_throw180_p2.config(text = str(player.count_180))
-        elif throw >= 140:
-            player.count_140 += 1
-            self.label_throw140_p2.config(text = str(player.count_140))
-        elif throw >= 100:
-            player.count_100 += 1
-            self.label_throw100_p2.config(text = str(player.count_100))
-        elif throw >= 60:
-            player.count_60 += 1
-            self.label_throw60_p2.config(text = str(player.count_60))
+    def check_throw_stats_p2(self, throw, player, remove=None):
+        if remove == 'remove':
+            if throw == 180:
+                player.count_180 -= 1
+                self.label_throw180_p1.config(text = str(player.count_180))
+            elif throw >= 140:
+                player.count_140 -= 1
+                self.label_throw140_p1.config(text = str(player.count_140))
+            elif throw >= 100:
+                player.count_100 -= 1
+                self.label_throw100_p1.config(text = str(player.count_100))
+            elif throw >= 60:
+                player.count_60 -= 1
+                self.label_throw60_p1.config(text = str(player.count_60))
+                
+        else:
+            if throw == 180:
+                player.count_180 += 1
+                self.label_throw180_p2.config(text = str(player.count_180))
+            elif throw >= 140:
+                player.count_140 += 1
+                self.label_throw140_p2.config(text = str(player.count_140))
+            elif throw >= 100:
+                player.count_100 += 1
+                self.label_throw100_p2.config(text = str(player.count_100))
+            elif throw >= 60:
+                player.count_60 += 1
+                self.label_throw60_p2.config(text = str(player.count_60))
             
     def check_finish_stats_p2(self, throw, player):
         if throw >= 130:
@@ -544,6 +641,7 @@ class MyGUI:
         else:
             player.finish_80 += 1
             self.label_finish80_p2.config(text = str(player.finish_80))
+    
     def calculate_averages(self, Leg, Set, Match, player):
         Leg_average = np.mean(Leg.leg_throws[player.name])
         Set_average = np.mean(Set.set_throws[player.name])

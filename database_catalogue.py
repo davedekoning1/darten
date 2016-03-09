@@ -215,7 +215,6 @@ class overview:
         for label in self.Labels.values():
             self.labels[label['name']] = self.create_labels(label['parent'], label['row'], label['column'], label['rowspan'], label['columnspan'], label['width'], label['var'], label['textvariable'], label['text'])
         
-        
     def create_frame(self, parent, row, column, rowspan, columnspan):
         new_frame = Frame(parent)
         new_frame.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan)
@@ -287,9 +286,7 @@ class overview:
         f_set_id = 1
         for sets in data_load['sets'].values():
             set_id = [int(s_id) for s_id in sets.set_id.split('.')]
-            print set_id, match_id
             if match_id == set_id[0]:
-                print f_set_id, match_id, set_id
                 all_sets.append(sets)
                 all_set_ids.append(set_id[-1])
         
