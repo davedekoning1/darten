@@ -61,9 +61,10 @@ class overview:
                                 'row': 2,
                                 'column': 2,
                                 'rowspan': 1}}     
-        self.frames = {}
-        self.listboxes = {}
-        self.labels = {}
+        self.frames = dict()
+        self.listboxes = dict()
+        self.labels = dict()
+        self.player_labels = dict()
         
         self.check_defaults(self.frame_defaults, self.Frames)
         
@@ -249,13 +250,18 @@ class overview:
         index = int(w.curselection()[0])
         value = w.get(index)
         
+        for label in self.player_labels.values():
+            label.grid_forget()
+        
         self.selected_match_id = value.split()[0]
         
-        self.selected_match = data_load['matches'][int(self.selected_match_id)]
+        match_id = int(self.selected_match_id)
+        
+        self.selected_match = data_load['matches'][match_id]
         self.opponent = [player for player in self.selected_match.players if player != self.selected_player][0]
         
-        all_sets = []
-        all_legs = []
+        all_sets = list()
+        all_legs = list()
         row = 1
         
         self.label_dict = {'top1': {'name': 'top1',
@@ -276,37 +282,55 @@ class overview:
                                         'var': True,
                                         'textvariable': self.opponent}}
         
-        for sets in data_load['sets'].values():
-            if sets.set_id.split('.')[0] == self.selected_match_id:
-                all_sets.append(sets)
+        all_set_ids = list()
         
         f_set_id = 1
-        for leg in data_load['legs'].values():
-            if leg.leg_id.split('.')[0] == self.selected_match_id:
-                all_legs.append(leg)
-                leg_average_player = '{:.2f}'.format(np.mean(leg.leg_throws[self.selected_player]))
-                leg_average_oppo = '{:.2f}'.format(np.mean(leg.leg_throws[self.opponent]))
-                c_set_id = int(leg.leg_id.split('.')[1])
-                c_leg_id = int(leg.leg_id.split('.')[-1])
-                row += 1
-                if c_set_id > f_set_id:
-                    col = 1
-                    for text in ['', '', '']:
-                        self.add_to_label_dict(col, row, text)
-                        col += 1
-                    row += 1
-                
-                input_string = 'Set %s - Leg %s' % (c_set_id, c_leg_id)
+        for sets in data_load['sets'].values():
+            set_id = [int(s_id) for s_id in sets.set_id.split('.')]
+            print set_id, match_id
+            if match_id == set_id[0]:
+                print f_set_id, match_id, set_id
+                all_sets.append(sets)
+                all_set_ids.append(set_id[-1])
+        
+        all_set_ids_sorted = sorted(all_set_ids)
+        
+        for c_set_id in all_set_ids_sorted:
+            set_id = '.'.join([str(match_id),str(c_set_id)])
+            sets = data_load['sets'][set_id]
+            row += 1
+            all_leg_ids = list()
+            
+            for legs in data_load['legs'].values():
+                leg_id = [int(l_id) for l_id in legs.leg_id.split('.')]
+                if match_id == leg_id[0] and c_set_id == leg_id[1]:
+                    all_legs.append(legs)
+                    all_leg_ids.append(leg_id[-1])
+            
+            all_leg_ids_sorted = sorted(all_leg_ids)
+            
+            for c_leg_id in all_leg_ids_sorted:
+                leg_id = '.'.join([str(match_id),str(c_set_id),str(c_leg_id)])
+                legs = data_load['legs'][leg_id]
+                leg_average_player = '{:.2f}'.format(np.mean(legs.leg_throws[self.selected_player]))
+                leg_average_oppo = '{:.2f}'.format(np.mean(legs.leg_throws[self.opponent]))
                 col = 1
+                input_string = 'Set %s - Leg %s' % (c_set_id, c_leg_id)
+                
                 for text in [input_string, leg_average_player, leg_average_oppo]:
                     self.add_to_label_dict(col, row, text)
                     col += 1
-        
-        print self.label_dict
+                row += 1
+
+            f_set_id += 1
+            col = 1
+            for text in ['', '', '']:
+                self.add_to_label_dict(col, row, text)
+                col += 1
         
         self.check_defaults(self.labels_defaults, self.label_dict)
         for label in self.label_dict.values():
-            self.labels[label['name']] = self.create_labels(label['parent'], label['row'], label['column'], label['rowspan'], label['columnspan'], label['width'], label['var'],label['textvariable'], label['text'])
+            self.player_labels[label['name']] = self.create_labels(label['parent'], label['row'], label['column'], label['rowspan'], label['columnspan'], label['width'], label['var'],label['textvariable'], label['text'])
     
     def add_to_label_dict(self, col, row, text):
         c_frame = self.frames['graph_frame']
@@ -347,10 +371,10 @@ class overview:
                     if leg.won_by == self.selected_player:
                         all_finishes.append(leg.finish)
                     
-        self.highest_fin = np.max(all_finishes)   
-        self.highest_av = np.max(all_averages)
+        self.highest_fin = np.max(all_finishes)
+        self.highest_av = '{:.2f}'.format(np.max(all_averages))
         self.highest_throw = np.max(all_throws)
-        self.av_last_match = all_averages[-1]
+        self.av_last_match = '{:.2f}'.format(all_averages[-1])
         if name == match.won_by:
             self.result_last_match = 'win'
         else:
