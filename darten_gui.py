@@ -750,6 +750,7 @@ class MyGUI:
             self.player1.score, throw = score_keeper(self.player1.score, throw)
             self.labelText = str(self.player1.score) + "    " + str(throw)
             self.depositlabel3.insert(END, self.labelText)
+            self.depositlabel3.yview(END)
             event.widget.delete(0, 'end')
             
             self.data['legs'][self.leg_id_db].leg_throws[self.player1.name].append(throw)
@@ -885,6 +886,7 @@ class MyGUI:
             self.player2.score, throw = score_keeper(self.player2.score, throw)
             self.labelText = str(self.player2.score) + "    " + str(throw)
             self.depositlabel4.insert(END, self.labelText)
+            self.depositlabel4.yview(END)
             event.widget.delete(0, 'end')
             
             self.data['legs'][self.leg_id_db].leg_throws[self.player2.name].append(throw)
