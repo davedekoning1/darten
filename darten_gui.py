@@ -178,6 +178,7 @@ class Match():
         self.set_counter = 0
         #self.date_tag = datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M")
         self.date_tag = datetime.now()
+        self.twentysix = 0
         
     def save_match_throws(self, players):
         for player in players:
@@ -207,7 +208,6 @@ class Leg():
         self.lost_by = None
         self.leg_throws = {}
         self.finish = 0
-        self.twentysix = []
     
     def save_leg_throws(self, players):
         for player in players:
@@ -272,7 +272,14 @@ def dart_match(players, bo_legs, bo_sets, data):
 
 class MyGUI:
     
-    def __init__(self):
+    labels_defaults = {'rowspan': 1,
+                        'columnspan': 1,
+                        'width': 10,
+                        'var': False,
+                        'textvariable': None,
+                        'text': None}
+                        
+    def __init__(self):            
         self.__mainWindow = Tk()
         # self.__mainWindow.after(1, lambda:self.__mainWindow.focus_force())
         
@@ -405,6 +412,8 @@ class MyGUI:
         self.high_frame.grid(row = 2,column = 1)
         self.finish_frame = Frame(self.stats_frame)
         self.finish_frame.grid(row = 3,column = 1)
+        self.twentysix_frame = Frame(self.stats_frame)
+        self.twentysix_frame.grid(row = 4,column = 1)
         
         self.lp1_average = Label(self.average_frame, text = 'Player 1')
         self.lp2_average = Label(self.average_frame, text = 'Player 2')
@@ -484,6 +493,15 @@ class MyGUI:
         self.label_finish130_p2.grid(row = 3, column = 3)
         self.label_finish130up_p2.grid(row = 3, column = 4)
         
+        self.Stats_labels = dict()
+        self.stats_labels = dict()
+        self.add_to_label_dict(frame =self.twentysix_frame, dct=self.Stats_labels, col=1, row=1, text='TWENTYSIX!!!', name = 'label_twentysix')
+        self.add_to_label_dict(frame =self.twentysix_frame, dct=self.Stats_labels, col=2, row=1, text="0", name = 'label_twentysix_count')
+        
+        self.check_defaults(self.labels_defaults, self.Stats_labels)
+        for label in self.Stats_labels.values():
+            self.stats_labels[label['name']] = self.create_labels(label['parent'], label['row'], label['column'], label['rowspan'], label['columnspan'], label['width'], label['var'], label['textvariable'], label['text'])
+        
         ##############################
         ### Setting up main window ###
         ##############################
@@ -494,6 +512,14 @@ class MyGUI:
         self.stats_frame.grid(row = 3, column = 3)        
         
         mainloop()
+    
+    def check_defaults(self, defaults, objects):
+        for frame in objects.values():
+            for default in defaults.keys():
+                try:
+                    frame[default]
+                except:
+                    frame[default] = defaults[default]
     
     def create_button(self, parent, text, command, row, column, rowspan, columnspan):
         new_button = ttk.Button(parent, text = text, command = command)
@@ -553,10 +579,10 @@ class MyGUI:
         
         return new_label
     
-    def add_to_label_dict(self, dct, col, row, text):
-        c_frame = self.frames['graph_frame']
-        name = col + (row - 1) * 3
-        dct[name] = dict(name=name, parent=c_frame, row=row, column=col, text=text)
+    def add_to_label_dict(self, frame, dct, col, row, text=None, var=False, textvariable=None, name = None):
+        if name is None:
+            name = col + (row - 1) * 3
+        dct[name] = dict(name=name, parent=frame, row=row, column=col, text=text, var=var, textvariable=textvariable)
         return dct
     
     def change_number_label(self, text, label):
@@ -576,6 +602,9 @@ class MyGUI:
             elif throw >= 60:
                 player.count_60 -= 1
                 self.label_throw60_p1.config(text = str(player.count_60))
+            elif throw == 26:
+                self.data['matches'][self.match_id].twentysix -= 1
+                self.stats_labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
                 
         else:
             if throw == 180:
@@ -590,6 +619,9 @@ class MyGUI:
             elif throw >= 60:
                 player.count_60 += 1
                 self.label_throw60_p1.config(text = str(player.count_60))
+            elif throw == 26:
+                self.data['matches'][self.match_id].twentysix += 1
+                self.stats_labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
             
     def check_finish_stats_p1(self, throw, player):
         if throw >= 130:
@@ -616,6 +648,9 @@ class MyGUI:
             elif throw >= 60:
                 player.count_60 -= 1
                 self.label_throw60_p1.config(text = str(player.count_60))
+            elif throw == 26:
+                self.data['matches'][self.match_id].twentysix -= 1
+                self.stats_labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
                 
         else:
             if throw == 180:
@@ -630,6 +665,9 @@ class MyGUI:
             elif throw >= 60:
                 player.count_60 += 1
                 self.label_throw60_p2.config(text = str(player.count_60))
+            elif throw == 26:
+                self.data['matches'][self.match_id].twentysix += 1
+                self.stats_labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
             
     def check_finish_stats_p2(self, throw, player):
         if throw >= 130:
@@ -826,6 +864,9 @@ class MyGUI:
                         self.depositlabel4.delete(0,END)
                         self.depositlabel3.insert(END, "501")
                         self.depositlabel4.insert(END, "501")
+                        
+                        self.possible_finish_p1.set("Not yet")
+                        self.possible_finish_p2.set("Not yet")
                     
                         self.set_id += 1
                         self.set_id_db = str(self.match_id) + '.' + str(self.set_id)
@@ -962,6 +1003,9 @@ class MyGUI:
                         self.depositlabel4.delete(0,END)
                         self.depositlabel3.insert(END, "501")
                         self.depositlabel4.insert(END, "501")
+                        
+                        self.possible_finish_p1.set("Not yet")
+                        self.possible_finish_p2.set("Not yet")
                     
                         self.set_id += 1
                         self.set_id_db = str(self.match_id) + '.' + str(self.set_id)
@@ -1006,6 +1050,11 @@ class MyGUI:
     
         
     def start_dart_match(self, event):
+        for attr in ['bo_legs', 'bo_sets', 'player1', 'player2']:
+            if not hasattr(self, attr):
+                print "%s is not defined yet!" % (attr)
+                return
+        
         self.depositlabel3.delete(0,END)
         self.depositlabel4.delete(0,END)
         self.depositlabel3.insert(END, "501")
@@ -1067,6 +1116,11 @@ class MyGUI:
 #         self.change_number_label(self.player2.sets, self.label_player2_sets)
 
     def start_dart_match2(self):
+        for attr in ['bo_legs', 'bo_sets', 'player1', 'player2']:
+            if not hasattr(self, attr):
+                print "%s is not defined yet!" % (attr)
+                return
+        
         self.depositlabel3.delete(0,END)
         self.depositlabel4.delete(0,END)
         self.depositlabel3.insert(END, "501")
