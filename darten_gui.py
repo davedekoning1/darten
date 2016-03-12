@@ -493,14 +493,18 @@ class MyGUI:
         self.label_finish130_p2.grid(row = 3, column = 3)
         self.label_finish130up_p2.grid(row = 3, column = 4)
         
-        self.Stats_labels = dict()
-        self.stats_labels = dict()
-        self.add_to_label_dict(frame =self.twentysix_frame, dct=self.Stats_labels, col=1, row=1, text='TWENTYSIX!!!', name = 'label_twentysix')
-        self.add_to_label_dict(frame =self.twentysix_frame, dct=self.Stats_labels, col=2, row=1, text="0", name = 'label_twentysix_count')
+        self.Label = dict()
+        self.labels = dict()
+        self.add_to_label_dict(frame = self.twentysix_frame, dct=self.Label, col=1, row=1, text="TWENTYSIX!!!", name = "label_twentysix")
+        self.add_to_label_dict(frame = self.twentysix_frame, dct=self.Label, col=2, row=1, text="0", name = "label_twentysix_count")
         
-        self.check_defaults(self.labels_defaults, self.Stats_labels)
-        for label in self.Stats_labels.values():
-            self.stats_labels[label['name']] = self.create_labels(label['parent'], label['row'], label['column'], label['rowspan'], label['columnspan'], label['width'], label['var'], label['textvariable'], label['text'])
+        self.add_to_label_dict(frame = self.finish_frame, dct = self.Label, col=1, row=1, text="Finishes", name="label_finishes")
+        self.add_to_label_dict(frame = self.high_frame, dct = self.Label, col=1, row=1, text="High throws", name="label_high_throws")
+        self.add_to_label_dict(frame = self.average_frame, dct = self.Label, col=1, row=1, text="Averages", name="label_averages")
+        
+        self.check_defaults(self.labels_defaults, self.Label)
+        for label in self.Label.values():
+            self.labels[label['name']] = self.create_labels(label['parent'], label['row'], label['column'], label['rowspan'], label['columnspan'], label['width'], label['var'], label['textvariable'], label['text'])
         
         ##############################
         ### Setting up main window ###
@@ -604,7 +608,7 @@ class MyGUI:
                 self.label_throw60_p1.config(text = str(player.count_60))
             elif throw == 26:
                 self.data['matches'][self.match_id].twentysix -= 1
-                self.stats_labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
+                self.labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
                 
         else:
             if throw == 180:
@@ -621,7 +625,7 @@ class MyGUI:
                 self.label_throw60_p1.config(text = str(player.count_60))
             elif throw == 26:
                 self.data['matches'][self.match_id].twentysix += 1
-                self.stats_labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
+                self.labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
             
     def check_finish_stats_p1(self, throw, player):
         if throw >= 130:
@@ -650,7 +654,7 @@ class MyGUI:
                 self.label_throw60_p1.config(text = str(player.count_60))
             elif throw == 26:
                 self.data['matches'][self.match_id].twentysix -= 1
-                self.stats_labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
+                self.labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
                 
         else:
             if throw == 180:
@@ -667,7 +671,7 @@ class MyGUI:
                 self.label_throw60_p2.config(text = str(player.count_60))
             elif throw == 26:
                 self.data['matches'][self.match_id].twentysix += 1
-                self.stats_labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
+                self.labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
             
     def check_finish_stats_p2(self, throw, player):
         if throw >= 130:
