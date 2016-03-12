@@ -5,6 +5,7 @@ from datetime import datetime
 from Tkinter import *
 import ttk
 from darten_gui import Darters, Leg, Set, Match
+import matplotlib.pyplot as plt
 
 class AutoVivification(dict):
     """Implementation of perl's autovivification feature."""
@@ -88,9 +89,13 @@ class overview:
         players = data_load['player_list']
         menu = OptionMenu(self.frames['top_frame'], self.var, *players)
         menu.grid(row = 1, column = 1)
+        menu.config(width = 10)
         self.var.set(players[0])
         self.selected_player = players[0]
         self.var.trace("w", lambda *args: self.option_changed(self.var))
+        
+        self.savebutton = Button(self.frames['top_frame'], width = 10, text = "Save histogram", command=self.savefigure)
+        self.savebutton.grid(row = 1, column = 2)
         
         self.getting_playerstats(players[0], data_load) ## Zorg ervoor dat hier de speler komt die geselecteerd is in het menu.
         self.filling_listbox(self.listboxes['match_box'])
@@ -333,11 +338,28 @@ class overview:
         c_frame = self.frames['graph_frame']
         name = col + (row - 1) * 3
         self.label_dict[name] = dict(name=name, parent=c_frame, row=row, column=col, text=text)
+        
+    def savefigure(self):
+        fig, ax = plt.subplots(1,1)
+        plt.hist(self.all_throws, bins=range(np.min(self.all_throws), np.max(self.all_throws) + 1, 1), color = "#87CEFA", edgecolor='none')
+        pl_mean = np.mean(self.all_throws)
+        all_throws_no_zeros = [val for val in self.all_throws if val != 0]
+        pl_mode = np.argmax(np.bincount(all_throws_no_zeros))
+        pl_highest = np.max(self.all_throws)
+        pl_lowest = np.min(all_throws_no_zeros)
+        plt.axvline(pl_mean, color='r')
+        
+        text = "Average:\nMost frequent throw:\nHighest throw:\nLowest throw:"
+        values = "{:>.2f}\n{:>d}\n{:>d}\n{:>d}".format(pl_mean, pl_mode, pl_highest, pl_lowest)
+        ax.text(0.5,0.8, text, transform=ax.transAxes, ha='left', fontsize=14)
+        ax.text(0.9,0.8, values, transform=ax.transAxes, ha='right', fontsize=14)
+        
+        fig.savefig("../../histogram_%s.png" % self.selected_player)
     
     ## filling player overview
     def getting_playerstats(self, name, data):
         all_matches = []
-        all_throws = []
+        self.all_throws = []
         all_averages = []
         all_dates = []
         all_finishes = []
@@ -351,7 +373,7 @@ class overview:
             if name in match.players:
                 name_opp = [item for item in match.players if item != name][0]
                 all_matches.append(match)
-                all_throws += match.match_throws[name]
+                self.all_throws += match.match_throws[name]
                 all_averages.append(np.mean(match.match_throws[name]))
                 all_dates.append(match.date_tag)
             
@@ -370,7 +392,7 @@ class overview:
                     
         self.highest_fin = np.max(all_finishes)
         self.highest_av = '{:.2f}'.format(np.max(all_averages))
-        self.highest_throw = np.max(all_throws)
+        self.highest_throw = np.max(self.all_throws)
         self.av_last_match = '{:.2f}'.format(all_averages[-1])
         if name == match.won_by:
             self.result_last_match = 'win'
