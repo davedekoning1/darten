@@ -9,6 +9,9 @@ New update 09-02-2016:
     Furthermore the code can possibly be cleaned a fair bit.
     
     ** Still to be added **
+    1. combine the 2 screens in one gui!
+    2. combine the callbacks for the two players!
+    3. continue match button
     4. Maybe add a menu for the settings of the match
     6. Nicer playername input fields
     7. Better layout of the gui
