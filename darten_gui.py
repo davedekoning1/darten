@@ -9,9 +9,11 @@ New update 09-02-2016:
     Furthermore the code can possibly be cleaned a fair bit.
     
     ** Still to be added **
-    2. View of previous matches
-    3. More stats/ custom stats
+    1. combine the 2 screens in one gui!
+    2. combine the callbacks for the two players!
+    3. continue match button
     4. Maybe add a menu for the settings of the match
+    5. Better setup of match, use enters/but perhaps also just check when a new match is started
     6. Nicer playername input fields
     7. Better layout of the gui
     10. Pop-up screen/save to excel/pdf with match overview
@@ -32,7 +34,7 @@ def check_bull(value, mult):
     return val
 
 def find_finishes(score):
-    preference = [40, 32, 16, 8]
+    preference = [40, 32, 16, 8, 4, 2]
     diction = AutoVivification()
     singles = []
     doubles = []
@@ -50,12 +52,11 @@ def find_finishes(score):
                 diction[key] = num * 3
                 triples.append(num*3)
     doubles.append(50)
-    singles = singles + [25,50]
-    all_throws =  singles + doubles + triples
+    singles = [50, 25] + singles
+    all_throws =  singles + triples
 
     if score in doubles:
-        num = score/2
-        key = 'D' + str(num)
+        key = check_bull(score, 'D')
         return key
         
     top_val = 0
@@ -70,9 +71,6 @@ def find_finishes(score):
                     key = val1 + ', ' + val2
                 elif value in triples:
                     val1 = check_bull(value, 'T')
-                    key = val1 + ', ' + val2
-                elif value in doubles:
-                    val1 = check_bull(value, 'D')
                     key = val1 + ', ' + val2
                 if (val1 > top_val and top_num not in preference) or (num in preference and num > top_num):
                     top_val = val1
@@ -93,27 +91,6 @@ def find_finishes(score):
                             val1 = check_bull(value1, 'T')
                             if value2 in singles:
                                 val2 = check_bull(value2, 'S')
-                                key = val1 + ', ' + val2 + ', ' + val3
-                            elif value2 in doubles:
-                                val2 = check_bull(value2, 'D')
-                                key = val1 + ', ' + val2 + ', ' + val3
-                            elif value2 in triples:
-                                val2 = check_bull(value2, 'T')
-                                key = val1 + ', ' + val2 + ', ' + val3
-                            if (value1 > top_val1 and value2 > top_val2 and top_num not in preference) or (num in preference and num > top_num):
-                                top_val1 = value1
-                                top_val2 = value2
-                                if num in preference:
-                                    top_num = num
-                                top_key = key
-                            
-                        elif value1 in doubles:
-                            val1 = check_bull(value1, 'D')
-                            if value2 in singles:
-                                val2 = check_bull(value2, 'S')
-                                key = val1 + ', ' + val2 + ', ' + val3
-                            elif value2 in doubles:
-                                val2 = check_bull(value2, 'D')
                                 key = val1 + ', ' + val2 + ', ' + val3
                             elif value2 in triples:
                                 val2 = check_bull(value2, 'T')
@@ -271,278 +248,244 @@ def dart_match(players, bo_legs, bo_sets, data):
     return [match_id, data, set_id, set_id_db, leg_id, leg_id_db, match_ongoing, imp_throws]
 
 class MyGUI:
-    
-    labels_defaults = {'rowspan': 1,
-                        'columnspan': 1,
-                        'width': 10,
-                        'var': False,
-                        'textvariable': None,
-                        'text': None}
                         
     def __init__(self):            
         self.__mainWindow = Tk()
-        # self.__mainWindow.after(1, lambda:self.__mainWindow.focus_force())
         
-        ######################
-        ### Settings frame ###
-        ######################
+        self.mainframes = dict()
+        self.subframes = dict()
         
-        self.settings_frame = Frame(self.__mainWindow)
+        self.listboxes = dict()
+        self.labels = AutoVivification()
+        self.buttons = dict()
+        self.entries = dict()
+        self.optionmenus = AutoVivification()
         
-        self.labelText = 'User name player 1'
-        self.label1 = Label(self.settings_frame, text = self.labelText)
-        self.labelText2 = 'User name player 2'
-        self.label2 = Label(self.settings_frame, text = self.labelText2)
-    
-        self.depositlabel1 = Label(self.settings_frame, text = 'Player 1')
-        self.depositlabel2 = Label(self.settings_frame, text = 'Player 2')
-    
-        self.depositEntry1 = Entry(self.settings_frame, width = 10)
-        self.depositEntry1.focus_set()
-        self.depositEntry1.bind('<Return>', self.depositCallBack1)
-        self.depositEntry2 = Entry(self.settings_frame, width = 10)
-        self.depositEntry2.bind('<Return>', self.depositCallBack2)
+        ### Frames ###
+        self.define_main_frames_dict()
+        for name, frame in self.MainFrames.items():
+            self.mainframes[name] = self.create_frame(**frame)
+            
+        self.define_sub_frames_dict()
+        for name, frame in self.SubFrames.items():
+            self.subframes[name] = self.create_frame(**frame)
         
-        self.no_legs = StringVar()
-        self.no_legs.set("Number of legs: ")
-        self.label_legs = Label(self.settings_frame, textvariable=self.no_legs)
-        self.no_sets = StringVar()
-        self.no_sets.set("Number of sets: ")
-        self.label_sets = Label(self.settings_frame, textvariable=self.no_sets)
+        ### Listboxes ###        
+        self.define_listboxes_dict()
+        for name, listbox in self.Listboxes.items():
+            self.listboxes[name] = self.create_listbox(**listbox)
         
-        self.depositEntry5 = Entry(self.settings_frame, width = 10)
-        self.depositEntry5.bind('<Return>', self.depositCallBack5)
-        self.depositEntry6 = Entry(self.settings_frame, width = 10)
-        self.depositEntry6.bind('<Return>', self.depositCallBack6)
+        ### Menus ###
+        # self.define_optionmenus_dict()
+        # for optionmenu in self.Optionmenus.values():
+            # self.optionmenus[optionmenu['name']]['menu'], self.optionmenus[optionmenu['name']]['variable'] = self.create_optionmenu(**optionmenu)
         
-        self.button1 = ttk.Button(self.settings_frame, text = "Start new match",command = self.start_dart_match2, takefocus = 1)
-        self.button1.bind('<Return>', self.start_dart_match)
-        # self.button1.bind('<Button-1>', self.start_dart_match)
+        ### Buttons ###
+        self.define_buttons_dict()
+        for name, button in self.Buttons.items():
+            self.buttons[name] = self.create_button(**button)
         
-        self.button1.grid(row = 3, column = 2, columnspan = 2, sticky=N)
+        ### Labels ###
+        self.define_labels_dict()
+        for name, label in self.Labels.items():
+            self.labels[name]['label'] = self.create_labels(self.labels, name=name, **label)
         
-        self.depositlabel1.grid(row = 1, column = 1, sticky=W)
-        self.depositlabel2.grid(row = 1, column = 4, sticky=E)
-        self.label1.grid(row = 2, column = 1, sticky=W)
-        self.label2.grid(row = 2, column = 4, sticky=E)
-        self.depositEntry1.grid(row = 3,column = 1)
-        self.depositEntry2.grid(row = 3,column = 4)
+        ### Entry boxes ###
+        self.define_entries_dict()
+        for name, entry in self.Entries.items():
+            self.entries[name] = self.create_entry(**entry)
         
-        self.label_legs.grid(row = 1, column = 2)
-        self.label_sets.grid(row = 2, column = 2)
-        self.depositEntry5.grid(row = 1, column = 3)
-        self.depositEntry6.grid(row = 2, column = 3)
-        
-        ##########################
-        ### Score keeper frame ###
-        ##########################
-        self.score_keeper_frame = Frame(self.__mainWindow)
-        
-        self.label_text12 = StringVar()
-        self.label_text12.set("Throw!")
-        self.label12 = Label(self.score_keeper_frame, textvariable=self.label_text12)
-        self.label_text13 = StringVar()
-        self.label_text13.set("Wait for it!")
-        self.label13 = Label(self.score_keeper_frame, textvariable=self.label_text13)
-        
-        self.possible_finish_p1 = StringVar()
-        self.possible_finish_p1.set("Not yet")
-        self.label_out1 = Label(self.score_keeper_frame, textvariable=self.possible_finish_p1)
-        self.possible_finish_p2 = StringVar()
-        self.possible_finish_p2.set("Not yet")
-        self.label_out2 = Label(self.score_keeper_frame, textvariable=self.possible_finish_p2)
-        
-        self.depositEntry3 = Entry(self.score_keeper_frame, width = 10)
-        self.depositEntry3.bind('<Return>', lambda widget=self.depositEntry3: self.depositCallBack3(widget))
-        self.depositEntry4 = Entry(self.score_keeper_frame, width = 10)
-        self.depositEntry4.bind('<Return>', lambda widget=self.depositEntry4: self.depositCallBack4(widget))
-        
-        self.depositlabel3 = Listbox(self.score_keeper_frame, width = 10)
-        self.depositlabel4 = Listbox(self.score_keeper_frame, width = 10)
-        
-        self.label12.grid(row = 1, column = 1, columnspan = 2)
-        self.label13.grid(row = 1, column = 3, columnspan = 2)
-        
-        self.depositlabel3.grid(row = 2,column = 1, rowspan = 2)
-        self.depositlabel4.grid(row = 2,column = 3, rowspan = 2)
-        self.depositEntry3.grid(row = 2,column = 2, sticky=E)
-        self.depositEntry4.grid(row = 2,column = 4, sticky=E)
-        
-        self.label_out1.grid(row = 4, column = 1, columnspan = 2)
-        self.label_out2.grid(row = 4, column = 3, columnspan = 2)
-        
-        self.create_button(self.score_keeper_frame, 'Undo', self.delete_entry1, row = 3, column = 2, rowspan = 1, columnspan = 1)
-        self.create_button(self.score_keeper_frame, 'Undo', self.delete_entry2, row = 3, column = 4, rowspan = 1, columnspan = 1)
-        
-        ###################
-        ### Score frame ###
-        ###################
-        self.score_frame = Frame(self.__mainWindow)
-        
-        self.label_sets = Label(self.score_frame, text = 'Sets: ')
-        self.label_legs = Label(self.score_frame, text = 'Legs: ')
-        
-        self.label_player1 = Label(self.score_frame, text = 'Player 1')
-        self.label_player2 = Label(self.score_frame, text = 'Player 2')
-        
-        self.label_player1_sets = Label(self.score_frame, text = "0")
-        self.label_player1_legs = Label(self.score_frame, text = "0")
-        self.label_player2_sets = Label(self.score_frame, text = "0")
-        self.label_player2_legs = Label(self.score_frame, text = "0")
-        
-        self.label_sets.grid(row = 1, column = 3)
-        self.label_legs.grid(row = 1, column = 2)
-        
-        self.label_player1.grid(row = 2, column = 1)
-        self.label_player2.grid(row = 3, column = 1)
-        
-        self.label_player1_sets.grid(row = 2, column = 3)
-        self.label_player1_legs.grid(row = 2, column = 2)
-        self.label_player2_sets.grid(row = 3, column = 3)
-        self.label_player2_legs.grid(row = 3, column = 2)
-        
-        ###################
-        ### Stats frame ###
-        ###################
-        self.stats_frame = Frame(self.__mainWindow)
-        
-        self.average_frame = Frame(self.stats_frame)
-        self.average_frame.grid(row = 1,column = 1)
-        self.high_frame = Frame(self.stats_frame)
-        self.high_frame.grid(row = 2,column = 1)
-        self.finish_frame = Frame(self.stats_frame)
-        self.finish_frame.grid(row = 3,column = 1)
-        self.twentysix_frame = Frame(self.stats_frame)
-        self.twentysix_frame.grid(row = 4,column = 1)
-        
-        self.lp1_average = Label(self.average_frame, text = 'Player 1')
-        self.lp2_average = Label(self.average_frame, text = 'Player 2')
-        self.label_average_match = Label(self.average_frame, text = "Match average")
-        self.label_average_first9 = Label(self.average_frame, text = "First 9 darts")
-        
-        self.label_average_match_p1 = Label(self.average_frame, text = "0")
-        self.label_average_first9_p1 = Label(self.average_frame, text = "0")
-        self.label_average_match_p2 = Label(self.average_frame, text = "0")
-        self.label_average_first9_p2 = Label(self.average_frame, text = "0")
-
-        self.lp1_high = Label(self.high_frame, text = 'Player 1')
-        self.lp2_high = Label(self.high_frame, text = 'Player 2')
-        self.label_throw60 = Label(self.high_frame, text = "60-100")
-        self.label_throw100 = Label(self.high_frame, text = "100-140")
-        self.label_throw140 = Label(self.high_frame, text = "140-180")
-        self.label_throw180 = Label(self.high_frame, text = "180")
-        
-        self.label_throw60_p1 = Label(self.high_frame, text = "0")
-        self.label_throw100_p1 = Label(self.high_frame, text = "0")
-        self.label_throw140_p1 = Label(self.high_frame, text = "0")
-        self.label_throw180_p1 = Label(self.high_frame, text = "0")
-        self.label_throw60_p2 = Label(self.high_frame, text = "0")
-        self.label_throw100_p2 = Label(self.high_frame, text = "0")
-        self.label_throw140_p2 = Label(self.high_frame, text = "0")
-        self.label_throw180_p2 = Label(self.high_frame, text = "0")
-        
-        self.lp1_finish = Label(self.finish_frame, text = 'Player 1')
-        self.lp2_finish = Label(self.finish_frame, text = 'Player 2')
-        self.label_finish80 = Label(self.finish_frame, text = "0-80")
-        self.label_finish130 = Label(self.finish_frame, text = "80-130")
-        self.label_finish130up = Label(self.finish_frame, text = "130+")
-        
-        self.label_finish80_p1 = Label(self.finish_frame, text = "0")
-        self.label_finish130_p1 = Label(self.finish_frame, text = "0")
-        self.label_finish130up_p1 = Label(self.finish_frame, text = "0")
-        self.label_finish80_p2 = Label(self.finish_frame, text = "0")
-        self.label_finish130_p2 = Label(self.finish_frame, text = "0")
-        self.label_finish130up_p2 = Label(self.finish_frame, text = "0")
-        
-        self.lp1_average.grid(row = 2, column = 1)
-        self.lp2_average.grid(row = 3, column = 1)
-        self.label_average_match.grid(row = 1, column = 3)
-        self.label_average_first9.grid(row = 1, column = 2)
-        
-        self.label_average_match_p1.grid(row = 2, column = 3)
-        self.label_average_first9_p1.grid(row = 2, column = 2)
-        self.label_average_match_p2.grid(row = 3, column = 3)
-        self.label_average_first9_p2.grid(row = 3, column = 2)
-
-        self.lp1_high.grid(row = 2, column = 1)
-        self.lp2_high.grid(row = 3, column = 1)
-        self.label_throw60.grid(row = 1, column = 2)
-        self.label_throw100.grid(row = 1, column = 3)
-        self.label_throw140.grid(row = 1, column = 4)
-        self.label_throw180.grid(row = 1, column = 5)
-        
-        self.label_throw60_p1.grid(row = 2, column = 2)
-        self.label_throw100_p1.grid(row = 2, column = 3)
-        self.label_throw140_p1.grid(row = 2, column = 4)
-        self.label_throw180_p1.grid(row = 2, column = 5)
-        self.label_throw60_p2.grid(row = 3, column = 2)
-        self.label_throw100_p2.grid(row = 3, column = 3)
-        self.label_throw140_p2.grid(row = 3, column = 4)
-        self.label_throw180_p2.grid(row = 3, column = 5)
-        
-        self.lp1_finish.grid(row = 2, column = 1)
-        self.lp2_finish.grid(row = 3, column = 1)
-        self.label_finish80.grid(row = 1, column = 2)
-        self.label_finish130.grid(row = 1, column = 3)
-        self.label_finish130up.grid(row = 1, column = 4)
-        
-        self.label_finish80_p1.grid(row = 2, column = 2)
-        self.label_finish130_p1.grid(row = 2, column = 3)
-        self.label_finish130up_p1.grid(row = 2, column = 4)
-        self.label_finish80_p2.grid(row = 3, column = 2)
-        self.label_finish130_p2.grid(row = 3, column = 3)
-        self.label_finish130up_p2.grid(row = 3, column = 4)
-        
-        self.Label = dict()
-        self.labels = dict()
-        self.add_to_label_dict(frame = self.twentysix_frame, dct=self.Label, col=1, row=1, text="TWENTYSIX!!!", name = "label_twentysix")
-        self.add_to_label_dict(frame = self.twentysix_frame, dct=self.Label, col=2, row=1, text="0", name = "label_twentysix_count")
-        
-        self.add_to_label_dict(frame = self.finish_frame, dct = self.Label, col=1, row=1, text="Finishes", name="label_finishes")
-        self.add_to_label_dict(frame = self.high_frame, dct = self.Label, col=1, row=1, text="High throws", name="label_high_throws")
-        self.add_to_label_dict(frame = self.average_frame, dct = self.Label, col=1, row=1, text="Averages", name="label_averages")
-        
-        self.check_defaults(self.labels_defaults, self.Label)
-        for label in self.Label.values():
-            self.labels[label['name']] = self.create_labels(label['parent'], label['row'], label['column'], label['rowspan'], label['columnspan'], label['width'], label['var'], label['textvariable'], label['text'])
-        
-        ##############################
-        ### Setting up main window ###
-        ##############################
-
-        self.settings_frame.grid(row = 1, column = 1)
-        self.score_keeper_frame.grid(row = 3, column = 1)
-        self.score_frame.grid(row = 1, column = 3)
-        self.stats_frame.grid(row = 3, column = 3)        
+        ### Initialization ###
+        self.entries['no_of_legs_input'].focus_set()
         
         mainloop()
     
-    def check_defaults(self, defaults, objects):
-        for frame in objects.values():
-            for default in defaults.keys():
-                try:
-                    frame[default]
-                except:
-                    frame[default] = defaults[default]
+    def define_main_frames_dict(self):
+        self.MainFrames = {}
+        self.add_to_frame_dict(self.MainFrames, 'settings_frame', self.__mainWindow, row=1, col=1)
+        self.add_to_frame_dict(self.MainFrames, 'score_keeper_frame', self.__mainWindow, row=3, col=1)
+        self.add_to_frame_dict(self.MainFrames, 'score_frame', self.__mainWindow, row=1, col=3)
+        self.add_to_frame_dict(self.MainFrames, 'stats_frame', self.__mainWindow, row=3, col=3)
     
-    def create_button(self, parent, text, command, row, column, rowspan, columnspan):
-        new_button = ttk.Button(parent, text = text, command = command)
-        new_button.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan)
+    def define_sub_frames_dict(self):
+        self.SubFrames = {}
+        self.add_to_frame_dict(self.SubFrames, 'average_frame', self.mainframes['stats_frame'], row=1, col=1)
+        self.add_to_frame_dict(self.SubFrames, 'high_frame', self.mainframes['stats_frame'], row=2, col=1)
+        self.add_to_frame_dict(self.SubFrames, 'finish_frame', self.mainframes['stats_frame'], row=3, col=1)
+        self.add_to_frame_dict(self.SubFrames, 'twentysix_frame', self.mainframes['stats_frame'], row=4, col=1)        
+    
+    def define_entries_dict(self):
+        self.Entries = {}
+        self.add_to_entry_dict(self.Entries, 'name_p1_input', self.mainframes['settings_frame'], row=3, col=1, bindings={'<Return>': self.CallBack1}, width=10)
+        self.add_to_entry_dict(self.Entries, 'name_p2_input', self.mainframes['settings_frame'], row=3, col=4, bindings={'<Return>': self.CallBack2}, width=10)
+        self.add_to_entry_dict(self.Entries, 'no_of_legs_input', self.mainframes['settings_frame'], row=1, col=3, bindings={'<Return>': self.CallBack5}, width=10)
+        self.add_to_entry_dict(self.Entries, 'no_of_sets_input', self.mainframes['settings_frame'], row=2, col=3, bindings={'<Return>': self.CallBack6}, width=10)
+        
+        self.add_to_entry_dict(self.Entries, 'score_input_p1', self.mainframes['score_keeper_frame'], row=2, col=2, bindings={'<Return>': self.CallBack3}, width=10, sticky=E)
+        self.add_to_entry_dict(self.Entries, 'score_input_p2', self.mainframes['score_keeper_frame'], row=2, col=4, bindings={'<Return>': self.CallBack4}, width=10, sticky=E)
+        
+    def define_listboxes_dict(self):
+        self.Listboxes = {}
+        self.add_to_listbox_dict(self.Listboxes, 'score_keeper_p1', self.mainframes['score_keeper_frame'], row=2, col=1, rowspan=2, width=10)
+        self.add_to_listbox_dict(self.Listboxes, 'score_keeper_p2', self.mainframes['score_keeper_frame'], row=2, col=3, rowspan=2, width=10)
+    
+    def define_buttons_dict(self):
+        self.Buttons = {}
+        self.add_to_button_dict(self.Buttons, 'start_new_match', self.mainframes['settings_frame'], text='Start new match', row=3, col=2, columnspan=2, bindings={'<Return>':self.start_dart_match, '<Button-1>':self.start_dart_match}, sticky=N, takefocus=1)
+        self.add_to_button_dict(self.Buttons, 'Undo_p1', self.mainframes['score_keeper_frame'], text='Undo', row=3, col=2, callback=self.delete_entry1)
+        self.add_to_button_dict(self.Buttons, 'Undo_p2', self.mainframes['score_keeper_frame'], text='Undo', row=3, col=4, callback=self.delete_entry2)        
+        
+    def define_labels_dict(self):        
+        self.Labels = {}
+        
+        """Settings frame"""
+        self.add_to_label_dict(self.Labels, 'topname_desc_p1', self.mainframes['settings_frame'], row=1, col=1, text='User name player 1', sticky=W)
+        self.add_to_label_dict(self.Labels, 'topname_desc_p2', self.mainframes['settings_frame'], row=1, col=4, text='User name player 2', sticky=E)
+        self.add_to_label_dict(self.Labels, 'topname_p1', self.mainframes['settings_frame'], row=2, col=1, text='Player 1', sticky=W)
+        self.add_to_label_dict(self.Labels, 'topname_p2', self.mainframes['settings_frame'], row=2, col=4, text='Player 2', sticky=E)
+        
+        self.add_to_label_dict(self.Labels, 'no_of_legs', self.mainframes['settings_frame'], row=1, col=2, text='Number of legs: ', var=True)
+        self.add_to_label_dict(self.Labels, 'no_of_sets', self.mainframes['settings_frame'], row=2, col=2, text='Number of sets: ', var=True)
+        
+        """Score keeper frame"""
+        self.add_to_label_dict(self.Labels, 'turn_msg_p1', self.mainframes['score_keeper_frame'], row=1, col=1, columnspan=2, text='Throw! ', var=True)
+        self.add_to_label_dict(self.Labels, 'turn_msg_p2', self.mainframes['score_keeper_frame'], row=1, col=3, columnspan=2, text='Wait for it! ', var=True)
+        
+        self.add_to_label_dict(self.Labels, 'fin_msg_p1', self.mainframes['score_keeper_frame'], row=4, col=1, columnspan=2, text='Not yet', var=True)
+        self.add_to_label_dict(self.Labels, 'fin_msg_p2', self.mainframes['score_keeper_frame'], row=4, col=3, columnspan=2, text='Not yet', var=True)
+        
+        """Score frame"""
+        self.add_to_label_dict(self.Labels, 'label_legs', self.mainframes['score_frame'], row=1, col=2, text='Legs: ')
+        self.add_to_label_dict(self.Labels, 'label_sets', self.mainframes['score_frame'], row=1, col=3, text='Sets: ')
+
+        self.add_to_label_dict(self.Labels, 'label_p1_name', self.mainframes['score_frame'], row=2, col=1, text='Player 1')
+        self.add_to_label_dict(self.Labels, 'label_p2_name', self.mainframes['score_frame'], row=3, col=1, text='Player 2')
+
+        self.add_to_label_dict(self.Labels, 'leg_count_p1', self.mainframes['score_frame'], row=2, col=2, text='0')
+        self.add_to_label_dict(self.Labels, 'set_count_p1', self.mainframes['score_frame'], row=2, col=3, text='0')
+        self.add_to_label_dict(self.Labels, 'leg_count_p2', self.mainframes['score_frame'], row=3, col=2, text='0')
+        self.add_to_label_dict(self.Labels, 'set_count_p2', self.mainframes['score_frame'], row=3, col=3, text='0')
+
+        """Stats frames"""
+        
+        """Average frame"""
+        self.add_to_label_dict(self.Labels, 'frame_desc_average', self.subframes['average_frame'], col=1, row=1, text="Averages")
+        self.add_to_label_dict(self.Labels, 'lp1_average', self.subframes['average_frame'], row=2, col=1, text='Player 1')
+        self.add_to_label_dict(self.Labels, 'lp2_average', self.subframes['average_frame'], row=3, col=1, text='Player 2')
+        self.add_to_label_dict(self.Labels, 'label_average_first9', self.subframes['average_frame'], row=1, col=2, text='First 9 darts')
+        self.add_to_label_dict(self.Labels, 'label_average_match', self.subframes['average_frame'], row=1, col=3, text='Match average')
+
+        self.add_to_label_dict(self.Labels, 'first9_average_p1', self.subframes['average_frame'], row=2, col=2, text='0')
+        self.add_to_label_dict(self.Labels, 'match_average_p1', self.subframes['average_frame'], row=2, col=3, text='0')
+        self.add_to_label_dict(self.Labels, 'first9_average_p2', self.subframes['average_frame'], row=3, col=2, text='0')
+        self.add_to_label_dict(self.Labels, 'match_average_p2', self.subframes['average_frame'], row=3, col=3, text='0')
+        
+        """High frame"""
+        self.add_to_label_dict(self.Labels, 'frame_desc_high', self.subframes['high_frame'], col=1, row=1, text="High throws")
+        self.add_to_label_dict(self.Labels, 'lp1_high', self.subframes['high_frame'], row=2, col=1, text='Player 1')
+        self.add_to_label_dict(self.Labels, 'lp2_high', self.subframes['high_frame'], row=3, col=1, text='Player 2')
+        self.add_to_label_dict(self.Labels, 'label_throw60', self.subframes['high_frame'], row=1, col=2, text='60-100')
+        self.add_to_label_dict(self.Labels, 'label_throw100', self.subframes['high_frame'], row=1, col=3, text='100-140')
+        self.add_to_label_dict(self.Labels, 'label_throw140', self.subframes['high_frame'], row=1, col=4, text='140-180')
+        self.add_to_label_dict(self.Labels, 'label_throw180', self.subframes['high_frame'], row=1, col=5, text='180')
+        
+        self.add_to_label_dict(self.Labels, 'throw60_count_p1', self.subframes['high_frame'], row=2, col=2, text='0')
+        self.add_to_label_dict(self.Labels, 'throw100_count_p1', self.subframes['high_frame'], row=2, col=3, text='0')
+        self.add_to_label_dict(self.Labels, 'throw140_count_p1', self.subframes['high_frame'], row=2, col=4, text='0')
+        self.add_to_label_dict(self.Labels, 'throw180_count_p1', self.subframes['high_frame'], row=2, col=5, text='0')
+        self.add_to_label_dict(self.Labels, 'throw60_count_p2', self.subframes['high_frame'], row=3, col=2, text='0')
+        self.add_to_label_dict(self.Labels, 'throw100_count_p2', self.subframes['high_frame'], row=3, col=3, text='0')
+        self.add_to_label_dict(self.Labels, 'throw140_count_p2', self.subframes['high_frame'], row=3, col=4, text='0')
+        self.add_to_label_dict(self.Labels, 'throw180_count_p2', self.subframes['high_frame'], row=3, col=5, text='0')
+        
+        """Finish frame"""
+        self.add_to_label_dict(self.Labels, 'frame_desc_finish', self.subframes['finish_frame'], col=1, row=1, text="Finishes")
+        self.add_to_label_dict(self.Labels, 'lp1_finish', self.subframes['finish_frame'], row=2, col=1, text='Player 1')
+        self.add_to_label_dict(self.Labels, 'lp2_finish', self.subframes['finish_frame'], row=3, col=1, text='Player 2')
+        self.add_to_label_dict(self.Labels, 'label_finish80', self.subframes['finish_frame'], row=1, col=2, text='0-80')
+        self.add_to_label_dict(self.Labels, 'label_finish130', self.subframes['finish_frame'], row=1, col=3, text='80-130')
+        self.add_to_label_dict(self.Labels, 'label_finish130up', self.subframes['finish_frame'], row=1, col=4, text='130+')
+        self.add_to_label_dict(self.Labels, 'finish80_count_p1', self.subframes['finish_frame'], row=2, col=2, text='0')
+        self.add_to_label_dict(self.Labels, 'finish130_count_p1', self.subframes['finish_frame'], row=2, col=3, text='0')
+        self.add_to_label_dict(self.Labels, 'finish130up_count_p1', self.subframes['finish_frame'], row=2, col=4, text='0')
+        self.add_to_label_dict(self.Labels, 'finish80_count_p2', self.subframes['finish_frame'], row=3, col=2, text='0')
+        self.add_to_label_dict(self.Labels, 'finish130_count_p2', self.subframes['finish_frame'], row=3, col=3, text='0')
+        self.add_to_label_dict(self.Labels, 'finish130up_count_p2', self.subframes['finish_frame'], row=3, col=4, text='0')
+        
+        """26!!!"""
+        self.add_to_label_dict(self.Labels, 'label_26', self.subframes['twentysix_frame'], col=1, row=1, text="TWENTYSIX!!!")
+        self.add_to_label_dict(self.Labels, 'count_26', self.subframes['twentysix_frame'], col=2, row=1, text="0")
+    
+    def create_entry(self, parent, row, column, rowspan, columnspan, width, bindings, callback, sticky):
+        new_entry = Entry(parent, width=width)
+        if callback is None:
+            for binding, callback in bindings.items():
+                new_entry.bind(binding, callback)
+        else:
+            new_entry.config(command=callback)
+        new_entry.grid(row=row, column=column, rowspan=rowspan, columnspan=columnspan, sticky=sticky)
+        return new_entry
+    
+    def create_button(self, parent, text, row, column, rowspan, columnspan, bindings, callback, width, sticky, takefocus):
+        new_button = ttk.Button(parent, text=text, takefocus=takefocus)
+        if callback is None:
+            for binding, callback in bindings.items():
+                new_button.bind(binding, callback)
+        else:
+            new_button.config(command=callback)
+        
+        new_button.grid(row=row, column=column, rowspan=rowspan, columnspan=columnspan, sticky=sticky)
+        return new_button
     
     def create_frame(self, parent, row, column, rowspan, columnspan):
         new_frame = Frame(parent)
-        new_frame.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan)
+        new_frame.grid(row=row, column=column, rowspan=rowspan, columnspan=columnspan)
         return new_frame
     
-    def create_listbox(self, parent, row, column, rowspan, columnspan, width):
+    def create_listbox(self, parent, row, column, rowspan, columnspan, width, bindings):
         new_listbox = Listbox(parent, width = width)
-        new_listbox.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan)
-        new_listbox.bind('<<ListboxSelect>>', self.onselect)
+        new_listbox.grid(row=row, column=column, rowspan=rowspan, columnspan=columnspan)
+        if bindings is not None:
+            for binding, callback in bindings.items():
+                new_listbox.bind(binding, callback)
         return new_listbox
         
+    def create_labels(self, dct, name, parent, row, column, rowspan, columnspan, width, var, text, sticky):
+        if var == True:
+            dct[name]['textvar'] = StringVar()
+            dct[name]['textvar'].set(text)
+            new_label = Label(parent, textvariable=dct[name]['textvar'])
+            
+        else:
+            new_label = Label(parent, text=text)
+    
+        new_label.grid(row=row, column=column, rowspan=rowspan, columnspan=columnspan, sticky=sticky)
+    
+        return new_label
+
+    def add_to_entry_dict(self, dct, name, frame, row, col, rowspan=1, columnspan=1, bindings=None, callback=None, width=10, sticky=None):
+        dct[name] = dict(parent=frame, row=row, column=col, rowspan=rowspan, columnspan=columnspan, bindings=bindings, callback=callback, width=width, sticky=sticky)
+        return dct
+        
+    def add_to_label_dict(self, dct, name, frame, row, col, rowspan=1, columnspan=1, width=10, text=None, var=False, sticky=None):
+        dct[name] = dict(parent=frame, row=row, column=col, rowspan=rowspan, columnspan=columnspan, width=width, text=text, var=var, sticky=sticky)
+        return dct
+        
+    def add_to_frame_dict(self, dct, name, frame, row, col, rowspan=1, columnspan=1):
+        dct[name] = dict(parent=frame, row=row, column=col, rowspan=rowspan, columnspan=columnspan)
+        return dct
+        
+    def add_to_button_dict(self, dct, name, frame, text, row, col, rowspan=1, columnspan=1, bindings=None, callback=None, width=10, sticky=None, takefocus=1):
+        dct[name] = dict(parent=frame, text=text, row=row, column=col, rowspan=rowspan, columnspan=columnspan, bindings=bindings, callback=callback, width=width, sticky=sticky, takefocus=takefocus)
+        return dct
+        
+    def add_to_listbox_dict(self, dct, name, frame, row, col, rowspan=1, columnspan=1, width=10, bindings=None):
+        dct[name] = dict(parent=frame, row=row, column=col, rowspan=rowspan, columnspan=columnspan, width=width, bindings=bindings)
+        return dct
+        
     def delete_entry1(self):
-        throw = int(self.depositlabel3.get(END).split()[-1])
-        self.depositlabel3.delete(END)
+        throw = int(self.listboxes['score_keeper_p1'].get(END).split()[-1])
+        self.listboxes['score_keeper_p1'].delete(END)
         self.cycle_label_text()
         self.player1.no_throws -= 1
         
@@ -550,14 +493,14 @@ class MyGUI:
         del self.data['sets'][self.set_id_db].set_throws[self.player1.name][-1]
         del self.data['matches'][self.match_id].match_throws[self.player1.name][-1]
         
-        self.depositEntry3.focus_set()
+        self.entries['score_input_p1'].focus_set()
         self.check_throw_stats_p1(throw, self.player1, 'remove')
         self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1, 'N')
         self.player1.score += throw
         
     def delete_entry2(self):
-        throw = int(self.depositlabel4.get(END).split()[-1])
-        self.depositlabel4.delete(END)
+        throw = int(self.listboxes['score_keeper_p2'].get(END).split()[-1])
+        self.listboxes['score_keeper_p2'].delete(END)
         self.cycle_label_text()
         self.player2.no_throws -= 1
         
@@ -565,29 +508,10 @@ class MyGUI:
         del self.data['sets'][self.set_id_db].set_throws[self.player2.name][-1]
         del self.data['matches'][self.match_id].match_throws[self.player2.name][-1]
         
-        self.depositEntry4.focus_set()
+        self.entries['score_input_p2'].focus_set()
         self.check_throw_stats_p2(throw, self.player2, 'remove')
         self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2, 'N')
         self.player2.score += throw
-        
-    def create_labels(self, parent, row, column, rowspan, columnspan, width, var, textvariable, text):
-        
-        if var == True:
-            textvar = StringVar()
-            textvar.set(textvariable)
-            new_label = Label(parent, textvariable = textvar)
-        else:
-            new_label = Label(parent, text = text)
-        
-        new_label.grid(row = row, column = column, rowspan = rowspan, columnspan = columnspan, sticky = EW)
-        
-        return new_label
-    
-    def add_to_label_dict(self, frame, dct, col, row, text=None, var=False, textvariable=None, name = None):
-        if name is None:
-            name = col + (row - 1) * 3
-        dct[name] = dict(name=name, parent=frame, row=row, column=col, text=text, var=var, textvariable=textvariable)
-        return dct
     
     def change_number_label(self, text, label):
         label.config(text = str(text))
@@ -596,93 +520,93 @@ class MyGUI:
         if remove == 'remove':
             if throw == 180:
                 player.count_180 -= 1
-                self.label_throw180_p1.config(text = str(player.count_180))
+                self.labels['throw180_count_p1']['label'].config(text = str(player.count_180))
             elif throw >= 140:
                 player.count_140 -= 1
-                self.label_throw140_p1.config(text = str(player.count_140))
+                self.labels['throw140_count_p1']['label'].config(text = str(player.count_140))
             elif throw >= 100:
                 player.count_100 -= 1
-                self.label_throw100_p1.config(text = str(player.count_100))
+                self.labels['throw100_count_p1']['label'].config(text = str(player.count_100))
             elif throw >= 60:
                 player.count_60 -= 1
-                self.label_throw60_p1.config(text = str(player.count_60))
+                self.labels['throw60_count_p1']['label'].config(text = str(player.count_60))
             elif throw == 26:
                 self.data['matches'][self.match_id].twentysix -= 1
-                self.labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
+                self.labels['count_26']['label'].config(text = str(self.data['matches'][self.match_id].twentysix))
                 
         else:
             if throw == 180:
                 player.count_180 += 1
-                self.label_throw180_p1.config(text = str(player.count_180))
+                self.labels['throw180_count_p1']['label'].config(text = str(player.count_180))
             elif throw >= 140:
                 player.count_140 += 1
-                self.label_throw140_p1.config(text = str(player.count_140))
+                self.labels['throw140_count_p1']['label'].config(text = str(player.count_140))
             elif throw >= 100:
                 player.count_100 += 1
-                self.label_throw100_p1.config(text = str(player.count_100))
+                self.labels['throw100_count_p1']['label'].config(text = str(player.count_100))
             elif throw >= 60:
                 player.count_60 += 1
-                self.label_throw60_p1.config(text = str(player.count_60))
+                self.labels['throw60_count_p1']['label'].config(text = str(player.count_60))
             elif throw == 26:
                 self.data['matches'][self.match_id].twentysix += 1
-                self.labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
+                self.labels['count_26']['label'].config(text = str(self.data['matches'][self.match_id].twentysix))
             
     def check_finish_stats_p1(self, throw, player):
         if throw >= 130:
             player.finish_130up += 1
-            self.label_finish130up_p1.config(text = str(player.finish_130up))
+            self.labels['finish130up_count_p1']['label'].config(text = str(player.finish_130up))
         elif throw >= 80:
             player.finish_130 += 1
-            self.label_finish130_p1.config(text = str(player.finish_130))
+            self.labels['finish130_count_p1']['label'].config(text = str(player.finish_130))
         else:
             player.finish_80 += 1
-            self.label_finish80_p1.config(text = str(player.finish_80))
+            self.labels['finish80_count_p1']['label'].config(text = str(player.finish_80))
     
     def check_throw_stats_p2(self, throw, player, remove=None):
         if remove == 'remove':
             if throw == 180:
                 player.count_180 -= 1
-                self.label_throw180_p1.config(text = str(player.count_180))
+                self.labels['throw180_count_p2']['label'].config(text = str(player.count_180))
             elif throw >= 140:
                 player.count_140 -= 1
-                self.label_throw140_p1.config(text = str(player.count_140))
+                self.labels['throw140_count_p2']['label'].config(text = str(player.count_140))
             elif throw >= 100:
                 player.count_100 -= 1
-                self.label_throw100_p1.config(text = str(player.count_100))
+                self.labels['throw100_count_p2']['label'].config(text = str(player.count_100))
             elif throw >= 60:
                 player.count_60 -= 1
-                self.label_throw60_p1.config(text = str(player.count_60))
+                self.labels['throw60_count_p2']['label'].config(text = str(player.count_60))
             elif throw == 26:
                 self.data['matches'][self.match_id].twentysix -= 1
-                self.labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
+                self.labels['count_26']['label'].config(text = str(self.data['matches'][self.match_id].twentysix))
                 
         else:
             if throw == 180:
                 player.count_180 += 1
-                self.label_throw180_p2.config(text = str(player.count_180))
+                self.labels['throw180_count_p2']['label'].config(text = str(player.count_180))
             elif throw >= 140:
                 player.count_140 += 1
-                self.label_throw140_p2.config(text = str(player.count_140))
+                self.labels['throw140_count_p2']['label'].config(text = str(player.count_140))
             elif throw >= 100:
                 player.count_100 += 1
-                self.label_throw100_p2.config(text = str(player.count_100))
+                self.labels['throw100_count_p2']['label'].config(text = str(player.count_100))
             elif throw >= 60:
                 player.count_60 += 1
-                self.label_throw60_p2.config(text = str(player.count_60))
+                self.labels['throw60_count_p2']['label'].config(text = str(player.count_60))
             elif throw == 26:
                 self.data['matches'][self.match_id].twentysix += 1
-                self.labels['label_twentysix_count'].config(text = str(self.data['matches'][self.match_id].twentysix))
+                self.labels['count_26']['label'].config(text = str(self.data['matches'][self.match_id].twentysix))
             
     def check_finish_stats_p2(self, throw, player):
         if throw >= 130:
             player.finish_130up += 1
-            self.label_finish130up_p2.config(text = str(player.finish_130up))
+            self.labels['finish130up_count_p2']['label'].config(text = str(player.finish_130up))
         elif throw >= 80:
             player.finish_130 += 1
-            self.label_finish130_p2.config(text = str(player.finish_130))
+            self.labels['finish130_count_p2']['label'].config(text = str(player.finish_130))
         else:
             player.finish_80 += 1
-            self.label_finish80_p2.config(text = str(player.finish_80))
+            self.labels['finish80_count_p2']['label'].config(text = str(player.finish_80))
     
     def calculate_averages(self, Leg, Set, Match, player):
         Leg_average = np.mean(Leg.leg_throws[player.name])
@@ -706,9 +630,9 @@ class MyGUI:
                     First_9 += data['legs'][key].leg_throws[player.name][:3]
             
             First_9_mean = np.mean(First_9)
-            self.label_average_first9_p1.config(text = '{:.2f}'.format(First_9_mean))
+            self.labels['first9_average_p1']['label'].config(text = '{:.2f}'.format(First_9_mean))
         
-        self.label_average_match_p1.config(text = '{:.2f}'.format(Match_average))
+        self.labels['match_average_p1']['label'].config(text = '{:.2f}'.format(Match_average))
     
     def update_averages_p2(self, data, Leg, Set, Match, player, BelowNine):
         Leg_average = np.mean(Leg.leg_throws[player.name])
@@ -724,57 +648,57 @@ class MyGUI:
                     First_9 += data['legs'][key].leg_throws[player.name][:3]
             
             First_9_mean = np.mean(First_9)
-            self.label_average_first9_p2.config(text = '{:.2f}'.format(First_9_mean))
+            self.labels['first9_average_p2']['label'].config(text = '{:.2f}'.format(First_9_mean))
         
-        self.label_average_match_p2.config(text = '{:.2f}'.format(Match_average))
+        self.labels['match_average_p2']['label'].config(text = '{:.2f}'.format(Match_average))
 
     def cycle_label_text(self):
         self.LABEL_TEXT = ["Throw!", "Wait for it!"]
         self.label_index -= 1
         if self.label_index < -1:
             self.label_index = 0
-        self.label_text12.set(self.LABEL_TEXT[self.label_index])
-        self.label_text13.set(self.LABEL_TEXT[self.label_index+1])
+        self.labels['turn_msg_p1']['textvar'].set(self.LABEL_TEXT[self.label_index])
+        self.labels['turn_msg_p2']['textvar'].set(self.LABEL_TEXT[self.label_index+1])
 
-    def depositCallBack1(self,event):
-        self.labelText = self.depositEntry1.get()
-        self.depositlabel1.config(text = self.labelText)
-        self.label_player1.config(text = self.labelText)
+    def CallBack1(self, event):
+        self.labelText = self.entries['name_p1_input'].get()
+        self.labels['topname_p1']['label'].config(text = self.labelText)
+        self.labels['label_p1_name']['label'].config(text = self.labelText)
         
-    	self.lp1_average.config(text = self.labelText)
-    	self.lp1_high.config(text = self.labelText)
-    	self.lp1_finish.config(text = self.labelText)
+    	self.labels['lp1_average']['label'].config(text = self.labelText)
+    	self.labels['lp1_high']['label'].config(text = self.labelText)
+    	self.labels['lp1_finish']['label'].config(text = self.labelText)
         
-        self.player1 = Darters(self.depositEntry1.get())
+        self.player1 = Darters(self.labelText)
         
-        self.depositEntry2.focus_set()
+        self.entries['name_p2_input'].focus_set()
     
-    def depositCallBack2(self,event):
-        self.labelText = self.depositEntry2.get()
-        self.depositlabel2.config(text = self.labelText)
-        self.label_player2.config(text = self.labelText)
+    def CallBack2(self, event):
+        self.labelText = self.entries['name_p2_input'].get()
+        self.labels['topname_p2']['label'].config(text = self.labelText)
+        self.labels['label_p2_name']['label'].config(text = self.labelText)
 
-    	self.lp2_average.config(text = self.labelText)
-    	self.lp2_high.config(text = self.labelText)
-    	self.lp2_finish.config(text = self.labelText)
+    	self.labels['lp2_average']['label'].config(text = self.labelText)
+    	self.labels['lp2_high']['label'].config(text = self.labelText)
+    	self.labels['lp2_finish']['label'].config(text = self.labelText)
         
-        self.player2 = Darters(self.depositEntry2.get())
+        self.player2 = Darters(self.labelText)
         
-        self.button1.focus_set()
+        self.buttons['start_new_match'].focus_set()
         
-    def depositCallBack5(self,event):
-        self.no_legs.set("Number of legs: %s" % self.depositEntry5.get())
-        self.bo_legs = int(self.depositEntry5.get())
-        self.depositEntry5.delete(0,END)
-        self.depositEntry6.focus_set()
+    def CallBack5(self, event):
+        self.labels['no_of_legs']['textvar'].set("Number of legs: %s" % event.widget.get())
+        self.bo_legs = int(event.widget.get())
+        event.widget.delete(0,END)
+        self.entries['no_of_sets_input'].focus_set()
         
-    def depositCallBack6(self,event):
-        self.no_sets.set("Number of sets: %s" % self.depositEntry6.get())
-        self.bo_sets = int(self.depositEntry6.get())
-        self.depositEntry6.delete(0,END)
-        self.depositEntry1.focus_set()
+    def CallBack6(self, event):
+        self.labels['no_of_sets']['textvar'].set("Number of sets: %s" % event.widget.get())
+        self.bo_sets = int(event.widget.get())
+        event.widget.delete(0,END)
+        self.entries['name_p1_input'].focus_set()
         
-    def depositCallBack3(self,event):
+    def CallBack3(self, event):
         if self.match_ongoing == False:
             print "Start a new match"
             return
@@ -791,8 +715,8 @@ class MyGUI:
             self.cycle_label_text()
             self.player1.score, throw = score_keeper(self.player1.score, throw)
             self.labelText = str(self.player1.score) + "    " + str(throw)
-            self.depositlabel3.insert(END, self.labelText)
-            self.depositlabel3.yview(END)
+            self.listboxes['score_keeper_p1'].insert(END, self.labelText)
+            self.listboxes['score_keeper_p1'].yview(END)
             event.widget.delete(0, 'end')
             
             self.data['legs'][self.leg_id_db].leg_throws[self.player1.name].append(throw)
@@ -802,10 +726,10 @@ class MyGUI:
             if self.player1.score != 0:
                 self.player1.no_throws += 1
                 self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1)
-                self.depositEntry4.focus_set()
+                self.entries['score_input_p2'].focus_set()
                 self.check_throw_stats_p1(throw, self.player1)
                 self.update_averages_p1(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player1, 'N')
-                self.possible_finish_p1.set(find_finishes(self.player1.score))
+                self.labels['fin_msg_p1']['textvar'].set(find_finishes(self.player1.score))
             
             else:
                 self.player1.no_throws += 1
@@ -842,14 +766,14 @@ class MyGUI:
                     self.data['matches'][self.match_id].set_counter += 1
                     self.player1.sets += 1
                     
-                    self.change_number_label(self.player1.sets, self.label_player1_sets)
+                    self.change_number_label(self.player1.sets, self.labels['set_count_p1']['label'])
                 
                     if self.player1.sets == self.bo_sets:
                         
                         legs_reset(self.players)
                         
-                        self.change_number_label(self.player1.legs, self.label_player1_legs)
-                        self.change_number_label(self.player2.legs, self.label_player2_legs)
+                        self.change_number_label(self.player1.legs, self.labels['leg_count_p1']['label'])
+                        self.change_number_label(self.player2.legs, self.labels['leg_count_p2']['label'])
                     
                         self.data['matches'][self.match_id].is_finished = True
                         self.data['matches'][self.match_id].won_by = self.player1.name
@@ -860,17 +784,17 @@ class MyGUI:
                         self.match_ongoing = False
                         print '%s has won the game!' % self.player1.name
                         
-                        self.button1.focus_set()
+                        self.buttons['start_new_match'].focus_set()
                         ## Hier moet misschien nog iets van een break!
                     else:
                         score_reset(self.players)
-                        self.depositlabel3.delete(0,END)
-                        self.depositlabel4.delete(0,END)
-                        self.depositlabel3.insert(END, "501")
-                        self.depositlabel4.insert(END, "501")
+                        self.listboxes['score_keeper_p1'].delete(0,END)
+                        self.listboxes['score_keeper_p2'].delete(0,END)
+                        self.listboxes['score_keeper_p1'].insert(END, "501")
+                        self.listboxes['score_keeper_p2'].insert(END, "501")
                         
-                        self.possible_finish_p1.set("Not yet")
-                        self.possible_finish_p2.set("Not yet")
+                        self.labels['fin_msg_p1']['textvar'].set("Not yet")
+                        self.labels['fin_msg_p2']['textvar'].set("Not yet")
                     
                         self.set_id += 1
                         self.set_id_db = str(self.match_id) + '.' + str(self.set_id)
@@ -885,10 +809,10 @@ class MyGUI:
                     
                         legs_reset(self.players)
                         
-                        self.depositEntry4.focus_set()
+                        self.entries['score_input_p2'].focus_set()
                         
-                        self.change_number_label(self.player1.legs, self.label_player1_legs)
-                        self.change_number_label(self.player2.legs, self.label_player2_legs)
+                        self.change_number_label(self.player1.legs, self.labels['leg_count_p1']['label'])
+                        self.change_number_label(self.player2.legs, self.labels['leg_count_p2']['label'])
                         
                         print '%s has won the set %s!' % (self.player1.name, self.data['matches'][self.match_id].set_counter)
                 else:
@@ -900,19 +824,19 @@ class MyGUI:
                     self.data['legs'][self.leg_id_db].save_leg_throws(self.players)
                 
                     score_reset(self.players)
-                    self.change_number_label(self.player1.legs, self.label_player1_legs)
-                    self.possible_finish_p1.set("Not yet")
-                    self.possible_finish_p2.set("Not yet")
+                    self.change_number_label(self.player1.legs, self.labels['leg_count_p1']['label'])
+                    self.labels['fin_msg_p1']['textvar'].set("Not yet")
+                    self.labels['fin_msg_p2']['textvar'].set("Not yet")
 
-                    self.depositEntry4.focus_set()
+                    self.entries['score_input_p2'].focus_set()
                     
-                    self.depositlabel3.delete(0,END)
-                    self.depositlabel4.delete(0,END)
-                    self.depositlabel3.insert(END, "501")
-                    self.depositlabel4.insert(END, "501")
+                    self.listboxes['score_keeper_p1'].delete(0,END)
+                    self.listboxes['score_keeper_p2'].delete(0,END)
+                    self.listboxes['score_keeper_p1'].insert(END, "501")
+                    self.listboxes['score_keeper_p2'].insert(END, "501")
                     print '%s has won the leg %s!' % (self.player1.name, self.data['sets'][self.set_id_db].leg_counter)
     
-    def depositCallBack4(self,event):
+    def CallBack4(self, event):
         if self.match_ongoing == False:
             print "Start a new match"
             return
@@ -930,8 +854,8 @@ class MyGUI:
             self.cycle_label_text()
             self.player2.score, throw = score_keeper(self.player2.score, throw)
             self.labelText = str(self.player2.score) + "    " + str(throw)
-            self.depositlabel4.insert(END, self.labelText)
-            self.depositlabel4.yview(END)
+            self.listboxes['score_keeper_p2'].insert(END, self.labelText)
+            self.listboxes['score_keeper_p2'].yview(END)
             event.widget.delete(0, 'end')
             
             self.data['legs'][self.leg_id_db].leg_throws[self.player2.name].append(throw)
@@ -940,11 +864,11 @@ class MyGUI:
             
             if self.player2.score != 0:
                 self.player2.no_throws += 1
-                self.depositEntry3.focus_set()
+                self.entries['score_input_p1'].focus_set()
                 self.check_throw_stats_p2(throw, self.player2)
                 self.calculate_averages(self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2)
                 self.update_averages_p2(self.data, self.data['legs'][self.leg_id_db], self.data['sets'][self.set_id_db], self.data['matches'][self.match_id], self.player2, 'N')
-                self.possible_finish_p2.set(find_finishes(self.player2.score))
+                self.labels['fin_msg_p2']['textvar'].set(find_finishes(self.player2.score))
             
             else:
                 self.player2.no_throws += 1
@@ -981,14 +905,14 @@ class MyGUI:
                     self.data['matches'][self.match_id].set_counter += 1
                     self.player2.sets += 1
                     
-                    self.change_number_label(self.player2.sets, self.label_player2_sets)
+                    self.change_number_label(self.player2.sets, self.labels['set_count_p2']['label'])
                 
                     if self.player2.sets == self.bo_sets:
                         
                         legs_reset(self.players)
                         
-                        self.change_number_label(self.player1.legs, self.label_player1_legs)
-                        self.change_number_label(self.player2.legs, self.label_player2_legs)
+                        self.change_number_label(self.player1.legs, self.labels['leg_count_p1']['label'])
+                        self.change_number_label(self.player2.legs, self.labels['leg_count_p2']['label'])
                                                 
                         self.data['matches'][self.match_id].is_finished = True
                         self.data['matches'][self.match_id].won_by = self.player2.name
@@ -999,17 +923,17 @@ class MyGUI:
                         self.match_ongoing = False
                         print '%s has won the game!' % self.player2.name
                         
-                        self.button1.focus_set()
+                        self.buttons['start_new_match'].focus_set()
                         ## Hier moet misschien nog iets van een break!
                     else:
                         score_reset(self.players)
-                        self.depositlabel3.delete(0,END)
-                        self.depositlabel4.delete(0,END)
-                        self.depositlabel3.insert(END, "501")
-                        self.depositlabel4.insert(END, "501")
+                        self.listboxes['score_keeper_p1'].delete(0,END)
+                        self.listboxes['score_keeper_p2'].delete(0,END)
+                        self.listboxes['score_keeper_p1'].insert(END, "501")
+                        self.listboxes['score_keeper_p2'].insert(END, "501")
                         
-                        self.possible_finish_p1.set("Not yet")
-                        self.possible_finish_p2.set("Not yet")
+                        self.labels['fin_msg_p1']['textvar'].set("Not yet")
+                        self.labels['fin_msg_p2']['textvar'].set("Not yet")
                     
                         self.set_id += 1
                         self.set_id_db = str(self.match_id) + '.' + str(self.set_id)
@@ -1024,10 +948,10 @@ class MyGUI:
                     
                         legs_reset(self.players)
 
-                        self.depositEntry3.focus_set()
+                        self.entries['score_input_p1'].focus_set()
                         
-                        self.change_number_label(self.player2.legs, self.label_player2_legs)
-                        self.change_number_label(self.player1.legs, self.label_player1_legs)
+                        self.change_number_label(self.player2.legs, self.labels['leg_count_p2']['label'])
+                        self.change_number_label(self.player1.legs, self.labels['leg_count_p1']['label'])
                         
                         print '%s has won the set %s!' % (self.player2.name, self.data['matches'][self.match_id].set_counter)
                 else:
@@ -1039,104 +963,40 @@ class MyGUI:
                     self.data['legs'][self.leg_id_db].save_leg_throws(self.players)
                 
                     score_reset(self.players)
-                    self.change_number_label(self.player2.legs, self.label_player2_legs)
+                    self.change_number_label(self.player2.legs, self.labels['leg_count_p2']['label'])
 
-                    self.possible_finish_p1.set("Not yet")
-                    self.possible_finish_p2.set("Not yet")
+                    self.labels['fin_msg_p1']['textvar'].set("Not yet")
+                    self.labels['fin_msg_p2']['textvar'].set("Not yet")
                     
-                    self.depositEntry3.focus_set()
+                    self.entries['score_input_p1'].focus_set()
                     
-                    self.depositlabel3.delete(0,END)
-                    self.depositlabel4.delete(0,END)
-                    self.depositlabel3.insert(END, "501")
-                    self.depositlabel4.insert(END, "501")
+                    self.listboxes['score_keeper_p1'].delete(0,END)
+                    self.listboxes['score_keeper_p2'].delete(0,END)
+                    self.listboxes['score_keeper_p1'].insert(END, "501")
+                    self.listboxes['score_keeper_p2'].insert(END, "501")
                     print '%s has won the leg %s!' % (self.player2.name, self.data['sets'][self.set_id_db].leg_counter)
     
         
     def start_dart_match(self, event):
         for attr in ['bo_legs', 'bo_sets', 'player1', 'player2']:
             if not hasattr(self, attr):
-                print "%s is not defined yet!" % (attr)
+                print "%s is not defined yet!, make sure to press enter after filling in an entrybox" % (attr)
                 return
         
-        self.depositlabel3.delete(0,END)
-        self.depositlabel4.delete(0,END)
-        self.depositlabel3.insert(END, "501")
-        self.depositlabel4.insert(END, "501")
+        self.listboxes['score_keeper_p1'].delete(0,END)
+        self.listboxes['score_keeper_p2'].delete(0,END)
+        self.listboxes['score_keeper_p1'].insert(END, '501')
+        self.listboxes['score_keeper_p2'].insert(END, '501')
         
-        self.depositEntry3.delete(0,END)
-        self.depositEntry4.delete(0,END)
-        self.depositEntry3.focus_set()
-        
-        self.label_index = 0
-        self.label_text12.set("Throw!")
-        self.label_text13.set("Wait for it!")
-        
-        self.players = [self.player1,self.player2]
-        [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.match_ongoing, self.imp_throws] = dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
-        for player in self.players:
-            player.__init__(name = player.name, matches = player.matches)
-            if player.name not in self.data['player_list']:
-                self.data['player_list'].append(player.name)
-            
-        
-        self.labels_changing = [
-        	[self.label_player1_sets, self.player1.legs],
-        	[self.label_player1_legs, self.player1.sets],
-        	[self.label_player2_sets, self.player2.legs],
-        	[self.label_player2_legs, self.player2.sets],
-        	[self.lp1_average, self.player1.name],
-        	[self.lp1_high, self.player1.name],
-        	[self.lp1_finish, self.player1.name],
-        	[self.lp2_average, self.player2.name],
-        	[self.lp2_high, self.player2.name],
-        	[self.lp2_finish, self.player2.name],
-        	[self.label_throw60_p1, self.player1.count_60],
-        	[self.label_throw100_p1, self.player1.count_100],
-        	[self.label_throw140_p1, self.player1.count_140],
-        	[self.label_throw180_p1, self.player1.count_180],
-        	[self.label_throw60_p2, self.player2.count_60],
-        	[self.label_throw100_p2, self.player2.count_100],
-        	[self.label_throw140_p2, self.player2.count_140],
-        	[self.label_throw180_p2, self.player2.count_180],
-        	[self.label_finish80_p1, self.player1.finish_80],
-        	[self.label_finish130_p1, self.player1.finish_130],
-        	[self.label_finish130up_p1, self.player1.finish_130up],
-        	[self.label_finish80_p2, self.player2.finish_80],
-        	[self.label_finish130_p2, self.player2.finish_130],
-        	[self.label_finish130up_p2, self.player2.finish_130up],
-        	[self.label_average_match_p1, "0"],
-        	[self.label_average_first9_p1, "0"],
-        	[self.label_average_match_p2, "0"],
-        	[self.label_average_first9_p2,  "0"]
-        ]
-        
-        for item in self.labels_changing:
-            self.change_number_label(item[1], item[0])
-        
-        # self.change_number_label(self.player1.legs, self.label_player1_legs)
-#         self.change_number_label(self.player1.sets, self.label_player1_sets)
-#         self.change_number_label(self.player2.legs, self.label_player2_legs)
-#         self.change_number_label(self.player2.sets, self.label_player2_sets)
-
-    def start_dart_match2(self):
-        for attr in ['bo_legs', 'bo_sets', 'player1', 'player2']:
-            if not hasattr(self, attr):
-                print "%s is not defined yet!" % (attr)
-                return
-        
-        self.depositlabel3.delete(0,END)
-        self.depositlabel4.delete(0,END)
-        self.depositlabel3.insert(END, "501")
-        self.depositlabel4.insert(END, "501")
-        
-        self.depositEntry3.delete(0,END)
-        self.depositEntry4.delete(0,END)
-        self.depositEntry3.focus_set()
+        self.entries['score_input_p1'].delete(0,END)
+        self.entries['score_input_p2'].delete(0,END)
+        self.entries['score_input_p1'].focus_set()
         
         self.label_index = 0
-        self.label_text12.set("Throw!")
-        self.label_text13.set("Wait for it!")
+        self.labels['turn_msg_p1']['textvar'].set('Throw!')
+        self.labels['turn_msg_p2']['textvar'].set('Wait for it!')
+        self.labels['fin_msg_p1']['textvar'].set('Not yet')
+        self.labels['fin_msg_p2']['textvar'].set('Not yet')
         
         self.players = [self.player1,self.player2]
         [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id, self.leg_id_db, self.match_ongoing, self.imp_throws] = dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
@@ -1146,48 +1006,41 @@ class MyGUI:
                 self.data['player_list'].append(player.name)
         
         self.labels_changing = [
-        	[self.label_player1_sets, self.player1.legs],
-        	[self.label_player1_legs, self.player1.sets],
-        	[self.label_player2_sets, self.player2.legs],
-        	[self.label_player2_legs, self.player2.sets],
-        	[self.lp1_average, self.player1.name],
-        	[self.lp1_high, self.player1.name],
-        	[self.lp1_finish, self.player1.name],
-        	[self.lp2_average, self.player2.name],
-        	[self.lp2_high, self.player2.name],
-        	[self.lp2_finish, self.player2.name],
-        	[self.label_throw60_p1, self.player1.count_60],
-        	[self.label_throw100_p1, self.player1.count_100],
-        	[self.label_throw140_p1, self.player1.count_140],
-        	[self.label_throw180_p1, self.player1.count_180],
-        	[self.label_throw60_p2, self.player2.count_60],
-        	[self.label_throw100_p2, self.player2.count_100],
-        	[self.label_throw140_p2, self.player2.count_140],
-        	[self.label_throw180_p2, self.player2.count_180],
-        	[self.label_finish80_p1, self.player1.finish_80],
-        	[self.label_finish130_p1, self.player1.finish_130],
-        	[self.label_finish130up_p1, self.player1.finish_130up],
-        	[self.label_finish80_p2, self.player2.finish_80],
-        	[self.label_finish130_p2, self.player2.finish_130],
-        	[self.label_finish130up_p2, self.player2.finish_130up],
-        	[self.label_average_match_p1, "0"],
-        	[self.label_average_first9_p1, "0"],
-        	[self.label_average_match_p2, "0"],
-        	[self.label_average_first9_p2,  "0"]
+        ['leg_count_p1', self.player1.legs],
+        ['set_count_p1', self.player1.sets],
+        ['leg_count_p2', self.player2.legs],
+        ['set_count_p2', self.player2.sets],
+        ['lp1_average', self.player1.name],
+        ['lp2_average', self.player2.name],
+        ['lp1_high', self.player1.name],
+        ['lp2_high', self.player2.name],
+        ['lp1_finish', self.player1.name],
+        ['lp2_finish', self.player2.name],
+        ['throw60_count_p1', self.player1.count_60],
+        ['throw100_count_p1', self.player1.count_100],
+        ['throw140_count_p1', self.player1.count_140],
+        ['throw180_count_p1', self.player1.count_180],
+        ['throw60_count_p2', self.player2.count_60],
+        ['throw100_count_p2', self.player2.count_100],
+        ['throw140_count_p2', self.player2.count_140],
+        ['throw180_count_p2', self.player2.count_180],
+        ['finish80_count_p1', self.player1.finish_80],
+        ['finish130_count_p1', self.player1.finish_130],
+        ['finish130up_count_p1', self.player1.finish_130up],
+        ['finish80_count_p2', self.player2.finish_80],
+        ['finish130_count_p2', self.player2.finish_130],
+        ['finish130up_count_p2', self.player2.finish_130up],
+        ['count_26', '0'],
+        ['first9_average_p1', '0'],
+        ['match_average_p1', '0'],
+        ['first9_average_p2', '0'],
+        ['match_average_p2', '0']
         ]
         
         for item in self.labels_changing:
-            self.change_number_label(item[1], item[0])
-        
-        # self.change_number_label(self.player1.legs, self.label_player1_legs)
-#         self.change_number_label(self.player1.sets, self.label_player1_sets)
-#         self.change_number_label(self.player2.legs, self.label_player2_legs)
-#         self.change_number_label(self.player2.sets, self.label_player2_sets)
+            self.change_number_label(item[1], self.labels[item[0]]['label'])
 
 if __name__ == "__main__":
-    #
-    # bo_legs = int(raw_input("Best of legs: "))
-    # bo_sets = int(raw_input("Best of sets: "))
 
     fname = 'database.pkl'
 

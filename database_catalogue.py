@@ -283,8 +283,15 @@ class overview:
             for c_leg_id in all_leg_ids_sorted:
                 leg_id = '.'.join([str(match_id),str(c_set_id),str(c_leg_id)])
                 legs = data_load['legs'][leg_id]
-                leg_average_player = '{:.2f}'.format(np.mean(legs.leg_throws[self.selected_player]))
-                leg_average_oppo = '{:.2f}'.format(np.mean(legs.leg_throws[self.opponent]))
+                if legs.leg_throws[self.selected_player]:
+                    leg_average_player = '{:.2f}'.format(np.mean(legs.leg_throws[self.selected_player]))
+                else:
+                    leg_average_player = 'No throws'
+                if legs.leg_throws[self.opponent]:
+                    leg_average_oppo = '{:.2f}'.format(np.mean(legs.leg_throws[self.opponent]))
+                else:
+                    leg_average_oppo = 'No throws'
+                
                 col = 1
                 input_string = 'Set %s - Leg %s' % (c_set_id, c_leg_id)
             
@@ -415,7 +422,8 @@ class overview:
                 all_matches.append(match)
                 all_match_ids.append(match.match_id)
                 self.all_throws += match.match_throws[name]
-                all_averages.append(np.mean(match.match_throws[name]))
+                if match.match_throws[name]:
+                    all_averages.append(np.mean(match.match_throws[name]))
                 all_dates.append(match.date_tag)
                 if match.won_by is not None and match.lost_by is not None:
                     if match.won_by == name:
@@ -435,19 +443,27 @@ class overview:
                     all_legs.append(leg)
                     if leg.won_by == self.selected_player:
                         all_finishes.append(leg.finish)
-                    
-        self.highest_fin = np.max(all_finishes)
+        
+        if all_finishes:
+            self.highest_fin = np.max(all_finishes)
+        else:
+            self.highest_fin = 'Never finished'
+        
         self.highest_av = '{:.2f}'.format(np.max(all_averages))
         self.highest_throw = np.max(self.all_throws)
         self.av_last_match = '{:.2f}'.format(all_averages[-1])
         last_match_id = all_match_ids.index(np.max(all_match_ids))
         if name == all_matches[last_match_id].won_by:
             self.result_last_match = 'win'
-        else:
+        elif name == all_matches[last_match_id].lost_by:
             self.result_last_match = 'lose'
+        else:
+            self.result_last_match = 'Did not finish last match'
         
-        if self.loss_count == 0:
+        if self.loss_count == 0 and self.win_count != 0:
             self.win_loss_ratio = 'Only wins bitch!'
+        elif self.loss_count == 0 and self.win_count == 0:
+            self.win_loss_ratio = 'No games finished yet'
         else:
             self.win_loss_ratio = '{:.2f}'.format(float(self.win_count)/float(self.loss_count))
 
