@@ -460,8 +460,10 @@ class overview:
         else:
             self.result_last_match = 'Did not finish last match'
         
-        if self.loss_count == 0:
+        if self.loss_count == 0 and self.win_count != 0:
             self.win_loss_ratio = 'Only wins bitch!'
+        elif self.loss_count == 0 and self.win_count == 0:
+            self.win_loss_ratio = 'No games finished yet'
         else:
             self.win_loss_ratio = '{:.2f}'.format(float(self.win_count)/float(self.loss_count))
 

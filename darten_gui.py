@@ -13,6 +13,7 @@ New update 09-02-2016:
     2. combine the callbacks for the two players!
     3. continue match button
     4. Maybe add a menu for the settings of the match
+    5. Better setup of match, use enters/but perhaps also just check when a new match is started
     6. Nicer playername input fields
     7. Better layout of the gui
     10. Pop-up screen/save to excel/pdf with match overview
@@ -979,7 +980,7 @@ class MyGUI:
     def start_dart_match(self, event):
         for attr in ['bo_legs', 'bo_sets', 'player1', 'player2']:
             if not hasattr(self, attr):
-                print "%s is not defined yet!" % (attr)
+                print "%s is not defined yet!, make sure to press enter after filling in an entrybox" % (attr)
                 return
         
         self.listboxes['score_keeper_p1'].delete(0,END)
