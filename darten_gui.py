@@ -11,11 +11,8 @@ New update 09-02-2016:
 
     ** Still to be added **
     1. combine the 2 screens in one gui!
-    2. combine the callbacks for the two players!
     3. continue match button
     4. Maybe add a menu for the settings of the match
-    5. Better setup of match, use enters/but perhaps also just check when a
-       new match is started
     6. Nicer playername input fields
     7. Better layout of the gui
     10. Pop-up screen/save to excel/pdf with match overview
@@ -43,9 +40,9 @@ def check_bull(value, mult):
     elif value == 25:
         val = 'Bull'
     elif mult == 'D':
-        val = mult + str(value/2)
+        val = mult + str(int(value/2))
     elif mult == 'T':
-        val = mult + str(value/3)
+        val = mult + str(int(value/3))
     elif mult == 'S':
         val = str(value)
     return val
@@ -90,9 +87,9 @@ def find_finishes(score):
                 elif value in triples:
                     val1 = check_bull(value, 'T')
                     key = val1 + ', ' + val2
-                if (val1 > top_val and top_num not in preference) or \
+                if (value > top_val and top_num not in preference) or \
                         (num in preference and num > top_num):
-                    top_val = val1
+                    top_val = value
                     top_key = key
                     if num in preference:
                         top_num = num
@@ -245,23 +242,23 @@ def retag(tag, *args):
 
 
 def dart_match(players, bo_legs, bo_sets, data):
-    match_id = data['match_counter'] + 1
-    data['match_counter'] += 1
+    match_id = data[b'match_counter'] + 1
+    data[b'match_counter'] += 1
 
-    data['matches'][match_id] = Match(match_id, bo_legs, bo_sets)
-    data['matches'][match_id].save_match_throws(players)
+    data[b'matches'][match_id] = Match(match_id, bo_legs, bo_sets)
+    data[b'matches'][match_id].save_match_throws(players)
 
     set_id = 1
     set_id_db = str(match_id) + '.' + str(set_id)
 
-    data['sets'][set_id_db] = Set(set_id_db, bo_legs)
-    data['sets'][set_id_db].save_set_throws(players)
+    data[b'sets'][set_id_db] = Set(set_id_db, bo_legs)
+    data[b'sets'][set_id_db].save_set_throws(players)
 
     leg_id = 1
     leg_id_db = str(match_id) + '.' + str(set_id) + '.' + str(leg_id)
 
-    data['legs'][leg_id_db] = Leg(leg_id_db)
-    data['legs'][leg_id_db].save_leg_throws(players)
+    data[b'legs'][leg_id_db] = Leg(leg_id_db)
+    data[b'legs'][leg_id_db].save_leg_throws(players)
 
     score_reset(players)
     legs_reset(players)
@@ -288,6 +285,9 @@ class MyGUI:
         self.buttons = dict()
         self.entries = dict()
         self.optionmenus = AutoVivification()
+
+        self.no_players = 2  # TODO dit moet een invulvak worden in scherm
+        self.players = []
 
         """ Frames """
         self.define_main_frames_dict()
@@ -355,27 +355,27 @@ class MyGUI:
 
     def define_entries_dict(self):
         self.Entries = {}
-        self.add_to_entry_dict(self.Entries, 'name_p1_input',
+        self.add_to_entry_dict(self.Entries, 'name_input_p1',
                                self.mainframes['settings_frame'], row=3, col=1,
                                bindings={'<Return>': self.CallBack1}, width=10)
-        self.add_to_entry_dict(self.Entries, 'name_p2_input',
+        self.add_to_entry_dict(self.Entries, 'name_input_p2',
                                self.mainframes['settings_frame'], row=3, col=4,
-                               bindings={'<Return>': self.CallBack2}, width=10)
+                               bindings={'<Return>': self.CallBack1}, width=10)
         self.add_to_entry_dict(self.Entries, 'no_of_legs_input',
                                self.mainframes['settings_frame'], row=1, col=3,
-                               bindings={'<Return>': self.CallBack5}, width=10)
+                               bindings={'<Return>': self.CallBack2}, width=10)
         self.add_to_entry_dict(self.Entries, 'no_of_sets_input',
                                self.mainframes['settings_frame'], row=2, col=3,
-                               bindings={'<Return>': self.CallBack6}, width=10)
+                               bindings={'<Return>': self.CallBack3}, width=10)
 
         self.add_to_entry_dict(self.Entries, 'score_input_p1',
                                self.mainframes['score_keeper_frame'], row=2,
-                               col=2, bindings={'<Return>': self.CallBack3},
+                               col=2, bindings={'<Return>': self.CallBack4},
                                width=10, sticky=tkinter.E)
         self.add_to_entry_dict(self.Entries, 'score_input_p2',
                                self.mainframes['score_keeper_frame'],
                                row=2, col=4,
-                               bindings={'<Return>': self.CallBack3},
+                               bindings={'<Return>': self.CallBack4},
                                width=10, sticky=tkinter.E)
 
     def define_listboxes_dict(self):
@@ -410,16 +410,16 @@ class MyGUI:
         self.Labels = {}
 
         """Settings frame"""
-        self.add_to_label_dict(self.Labels, 'topname_desc_p1',
+        self.add_to_label_dict(self.Labels, 'top_name_desc_p1',
                                self.mainframes['settings_frame'], row=1, col=1,
                                text='User name player 1', sticky=tkinter.W)
-        self.add_to_label_dict(self.Labels, 'topname_desc_p2',
+        self.add_to_label_dict(self.Labels, 'top_name_desc_p2',
                                self.mainframes['settings_frame'], row=1, col=4,
                                text='User name player 2', sticky=tkinter.E)
-        self.add_to_label_dict(self.Labels, 'topname_p1',
+        self.add_to_label_dict(self.Labels, 'top_name_p1',
                                self.mainframes['settings_frame'], row=2, col=1,
                                text='Player 1', sticky=tkinter.W)
-        self.add_to_label_dict(self.Labels, 'topname_p2',
+        self.add_to_label_dict(self.Labels, 'top_name_p2',
                                self.mainframes['settings_frame'], row=2, col=4,
                                text='Player 2', sticky=tkinter.E)
 
@@ -454,10 +454,10 @@ class MyGUI:
                                self.mainframes['score_frame'], row=1, col=3,
                                text='Sets: ')
 
-        self.add_to_label_dict(self.Labels, 'label_p1_name',
+        self.add_to_label_dict(self.Labels, 'label_name_p1',
                                self.mainframes['score_frame'], row=2, col=1,
                                text='Player 1')
-        self.add_to_label_dict(self.Labels, 'label_p2_name',
+        self.add_to_label_dict(self.Labels, 'label_name_p2',
                                self.mainframes['score_frame'], row=3, col=1,
                                text='Player 2')
 
@@ -480,10 +480,10 @@ class MyGUI:
         self.add_to_label_dict(self.Labels, 'frame_desc_average',
                                self.subframes['average_frame'], col=1, row=1,
                                text="Averages")
-        self.add_to_label_dict(self.Labels, 'lp1_average',
+        self.add_to_label_dict(self.Labels, 'l_average_p1',
                                self.subframes['average_frame'], row=2, col=1,
                                text='Player 1')
-        self.add_to_label_dict(self.Labels, 'lp2_average',
+        self.add_to_label_dict(self.Labels, 'l_average_p2',
                                self.subframes['average_frame'], row=3, col=1,
                                text='Player 2')
         self.add_to_label_dict(self.Labels, 'label_average_first9',
@@ -510,10 +510,10 @@ class MyGUI:
         self.add_to_label_dict(self.Labels, 'frame_desc_high',
                                self.subframes['high_frame'], col=1, row=1,
                                text="High throws")
-        self.add_to_label_dict(self.Labels, 'lp1_high',
+        self.add_to_label_dict(self.Labels, 'l_high_p1',
                                self.subframes['high_frame'], row=2, col=1,
                                text='Player 1')
-        self.add_to_label_dict(self.Labels, 'lp2_high',
+        self.add_to_label_dict(self.Labels, 'l_high_p2',
                                self.subframes['high_frame'], row=3, col=1,
                                text='Player 2')
         self.add_to_label_dict(self.Labels, 'label_throw60',
@@ -558,10 +558,10 @@ class MyGUI:
         self.add_to_label_dict(self.Labels, 'frame_desc_finish',
                                self.subframes['finish_frame'], col=1, row=1,
                                text="Finishes")
-        self.add_to_label_dict(self.Labels, 'lp1_finish',
+        self.add_to_label_dict(self.Labels, 'l_finish_p1',
                                self.subframes['finish_frame'], row=2, col=1,
                                text='Player 1')
-        self.add_to_label_dict(self.Labels, 'lp2_finish',
+        self.add_to_label_dict(self.Labels, 'l_finish_p2',
                                self.subframes['finish_frame'], row=3, col=1,
                                text='Player 2')
         self.add_to_label_dict(self.Labels, 'label_finish80',
@@ -696,30 +696,33 @@ class MyGUI:
 
     def delete_entry(self, event):
         caller = event.widget
-        ind = self.buttons.values().index(caller)
-        player_number = self.buttons.keys()[ind].split('_')[-1]
+        ind = list(self.buttons.values()).index(caller)
+        player_number = list(self.buttons.keys())[ind].split('_')[-1]
         for player in self.players:
             if player.number == player_number:
                 break
         score_keeper = 'score_keeper_{:s}'.format(player_number)
         score_input = 'score_input_{:s}'.format(player_number)
+        fin_msg = 'fin_msg_{:s}'.format(player_number)
 
         throw = int(self.listboxes[score_keeper].get(tkinter.END).split()[-1])
         self.listboxes[score_keeper].delete(tkinter.END)
         self.cycle_label_text()
         player.no_throws -= 1
 
-        del self.data['legs'][self.leg_id_db].leg_throws[player.name][-1]
-        del self.data['sets'][self.set_id_db].set_throws[player.name][-1]
-        del self.data['matches'][self.match_id].match_throws[player.name][-1]
+        del self.data[b'legs'][self.leg_id_db].leg_throws[player.name][-1]
+        del self.data[b'sets'][self.set_id_db].set_throws[player.name][-1]
+        del self.data[b'matches'][self.match_id].match_throws[player.name][-1]
 
         self.entries[score_input].focus_set()
         self.check_throw_stats(throw, player, 'remove')
-        self.update_averages(self.data, self.data['legs'][self.leg_id_db],
-                             self.data['sets'][self.set_id_db],
-                             self.data['matches'][self.match_id],
+        self.update_averages(self.data, self.data[b'legs'][self.leg_id_db],
+                             self.data[b'sets'][self.set_id_db],
+                             self.data[b'matches'][self.match_id],
                              player, 'N')
         player.score += throw
+        msg = find_finishes(player.score)
+        self.labels[fin_msg]['textvar'].set(msg)
 
     def change_number_label(self, text, label):
         label.config(text=str(text))
@@ -755,8 +758,8 @@ class MyGUI:
                 text = str(player.count_60)
                 self.labels[throw60]['label'].config(text=text)
             elif throw == 26:
-                self.data['matches'][self.match_id].twentysix -= 1
-                text = str(self.data['matches'][self.match_id].twentysix)
+                self.data[b'matches'][self.match_id].twentysix -= 1
+                text = str(self.data[b'matches'][self.match_id].twentysix)
                 self.labels['count_26']['label'].config(text=text)
 
         else:
@@ -777,8 +780,8 @@ class MyGUI:
                 text = str(player.count_60)
                 self.labels[throw60]['label'].config(text=text)
             elif throw == 26:
-                self.data['matches'][self.match_id].twentysix += 1
-                text = str(self.data['matches'][self.match_id].twentysix)
+                self.data[b'matches'][self.match_id].twentysix += 1
+                text = str(self.data[b'matches'][self.match_id].twentysix)
                 self.labels['count_26']['label'].config(text=text)
 
     def check_finish_stats(self, throw, player):
@@ -808,11 +811,11 @@ class MyGUI:
 
         if player.no_throws == 3 or BelowNine == 'Y':
             First_9 = []
-            for key in data['legs'].keys():
-                match_counter = data['match_counter']
+            for key in data[b'legs'].keys():
+                match_counter = data[b'match_counter']
                 len_match_count = len(str(match_counter))
                 if key[:len_match_count] == str(match_counter):
-                    First_9 += data['legs'][key].leg_throws[player.name][:3]
+                    First_9 += data[b'legs'][key].leg_throws[player.name][:3]
 
             First_9_mean = '{:.2f}'.format(np.mean(First_9))
             self.labels[first9_average]['label'].config(text=First_9_mean)
@@ -830,49 +833,55 @@ class MyGUI:
         self.labels['turn_msg_p2']['textvar'].set(text2)
 
     def CallBack1(self, event):
-        self.labelText = self.entries['name_p1_input'].get()
-        self.labels['topname_p1']['label'].config(text=self.labelText)
-        self.labels['label_p1_name']['label'].config(text=self.labelText)
+        caller = event.widget
+        ind = list(self.entries.values()).index(caller)
+        widget_name = list(self.entries.keys())[ind]
 
-        self.labels['lp1_average']['label'].config(text=self.labelText)
-        self.labels['lp1_high']['label'].config(text=self.labelText)
-        self.labels['lp1_finish']['label'].config(text=self.labelText)
+        player_number = widget_name.split('_')[-1]
+        player_name = self.entries[widget_name].get()
+        player = Darters(player_name, player_number)
 
-        self.player1 = Darters(self.labelText, 'p1')
+        top_name = 'top_name_{:s}'.format(player.number)
+        label_name = 'label_name_{:s}'.format(player.number)
 
-        self.entries['name_p2_input'].focus_set()
+        l_average = 'l_average_{:s}'.format(player.number)
+        l_high = 'l_high_{:s}'.format(player.number)
+        l_finish = 'l_finish_{:s}'.format(player.number)
+
+        self.labels[top_name]['label'].config(text=player.name)
+        self.labels[label_name]['label'].config(text=player.name)
+
+        self.labels[l_average]['label'].config(text=player.name)
+        self.labels[l_high]['label'].config(text=player.name)
+        self.labels[l_finish]['label'].config(text=player.name)
+
+        if len(self.players) < self.no_players:
+            self.players.append(player)
+
+        if len(self.players) == self.no_players:
+            self.buttons['start_new_match'].focus_set()
+        else:
+            next_entry_box = 'name_input_p{:d}'.format(len(self.players)+1)
+            self.entries[next_entry_box].focus_set()
 
     def CallBack2(self, event):
-        self.labelText = self.entries['name_p2_input'].get()
-        self.labels['topname_p2']['label'].config(text=self.labelText)
-        self.labels['label_p2_name']['label'].config(text=self.labelText)
-
-        self.labels['lp2_average']['label'].config(text=self.labelText)
-        self.labels['lp2_high']['label'].config(text=self.labelText)
-        self.labels['lp2_finish']['label'].config(text=self.labelText)
-
-        self.player2 = Darters(self.labelText, 'p2')
-
-        self.buttons['start_new_match'].focus_set()
-
-    def CallBack5(self, event):
         self.labels['no_of_legs']['textvar'].set("Number of legs: %s" %
                                                  event.widget.get())
         self.bo_legs = int(event.widget.get())
         event.widget.delete(0, tkinter.END)
         self.entries['no_of_sets_input'].focus_set()
 
-    def CallBack6(self, event):
+    def CallBack3(self, event):
         self.labels['no_of_sets']['textvar'].set("Number of sets: %s" %
                                                  event.widget.get())
         self.bo_sets = int(event.widget.get())
         event.widget.delete(0, tkinter.END)
-        self.entries['name_p1_input'].focus_set()
+        self.entries['name_input_p1'].focus_set()
 
-    def CallBack3(self, event):
+    def CallBack4(self, event):
         caller = event.widget
-        ind = self.entries.values().index(caller)
-        player_number = self.entries.keys()[ind].split('_')[-1]
+        ind = list(self.entries.values()).index(caller)
+        player_number = list(self.entries.keys())[ind].split('_')[-1]
         for player in self.players:
             if player.number == player_number:
                 break
@@ -904,11 +913,11 @@ class MyGUI:
             self.listboxes[score_keeper].yview(tkinter.END)
             event.widget.delete(0, 'end')
 
-            self.data['legs'][self.leg_id_db].leg_throws[player.name].\
+            self.data[b'legs'][self.leg_id_db].leg_throws[player.name].\
                 append(throw)
-            self.data['sets'][self.set_id_db].set_throws[player.name].\
+            self.data[b'sets'][self.set_id_db].set_throws[player.name].\
                 append(throw)
-            self.data['matches'][self.match_id].match_throws[player.name].\
+            self.data[b'matches'][self.match_id].match_throws[player.name].\
                 append(throw)
 
             if player.score != 0:
@@ -916,9 +925,9 @@ class MyGUI:
                 self.entries[score_input_oppo].focus_set()
                 self.check_throw_stats(throw, player)
                 self.update_averages(self.data,
-                                     self.data['legs'][self.leg_id_db],
-                                     self.data['sets'][self.set_id_db],
-                                     self.data['matches'][self.match_id],
+                                     self.data[b'legs'][self.leg_id_db],
+                                     self.data[b'sets'][self.set_id_db],
+                                     self.data[b'matches'][self.match_id],
                                      player, 'N')
                 msg = find_finishes(player.score)
                 self.labels[fin_msg]['textvar'].set(msg)
@@ -928,41 +937,41 @@ class MyGUI:
                 self.check_finish_stats(throw, player)
                 self.check_throw_stats(throw, player)
                 self.update_averages(self.data,
-                                     self.data['legs'][self.leg_id_db],
-                                     self.data['sets'][self.set_id_db],
-                                     self.data['matches'][self.match_id],
+                                     self.data[b'legs'][self.leg_id_db],
+                                     self.data[b'sets'][self.set_id_db],
+                                     self.data[b'matches'][self.match_id],
                                      player, 'N')
                 if opponent.no_throws < 9:
                     self.update_averages(self.data,
-                                         self.data['legs'][self.leg_id_db],
-                                         self.data['sets'][self.set_id_db],
-                                         self.data['matches'][self.match_id],
+                                         self.data[b'legs'][self.leg_id_db],
+                                         self.data[b'sets'][self.set_id_db],
+                                         self.data[b'matches'][self.match_id],
                                          opponent, 'Y')
 
-                self.data['legs'][self.leg_id_db].finish = throw
-                self.data['legs'][self.leg_id_db].is_finished = True
-                self.data['legs'][self.leg_id_db].won_by = player.name
-                self.data['legs'][self.leg_id_db].lost_by = opponent.name
+                self.data[b'legs'][self.leg_id_db].finish = throw
+                self.data[b'legs'][self.leg_id_db].is_finished = True
+                self.data[b'legs'][self.leg_id_db].won_by = player.name
+                self.data[b'legs'][self.leg_id_db].lost_by = opponent.name
 
                 save_data(self.data, fname)
 
                 opponent.no_throws = 0
                 player.no_throws = 0
 
-                self.data['sets'][self.set_id_db].leg_counter += 1
+                self.data[b'sets'][self.set_id_db].leg_counter += 1
                 player.legs += 1
 
                 if player.legs == self.bo_legs:
 
-                    self.data['sets'][self.set_id_db].is_finished = True
-                    self.data['sets'][self.set_id_db].won_by = player.name
-                    self.data['sets'][self.set_id_db].lost_by = opponent.name
+                    self.data[b'sets'][self.set_id_db].is_finished = True
+                    self.data[b'sets'][self.set_id_db].won_by = player.name
+                    self.data[b'sets'][self.set_id_db].lost_by = opponent.name
 
                     save_data(self.data, fname)
 
-                    self.data['sets'][self.set_id_db].leg_counter = 0
+                    self.data[b'sets'][self.set_id_db].leg_counter = 0
                     self.leg_id = 1
-                    self.data['matches'][self.match_id].set_counter += 1
+                    self.data[b'matches'][self.match_id].set_counter += 1
                     player.sets += 1
 
                     self.change_number_label(player.sets,
@@ -979,10 +988,10 @@ class MyGUI:
                                                  self.labels[leg_count_oppo]
                                                  ['label'])
 
-                        self.data['matches'][self.match_id].is_finished = True
-                        self.data['matches'][self.match_id].won_by = \
+                        self.data[b'matches'][self.match_id].is_finished = True
+                        self.data[b'matches'][self.match_id].won_by = \
                             player.name
-                        self.data['matches'][self.match_id].lost_by = \
+                        self.data[b'matches'][self.match_id].lost_by = \
                             opponent.name
 
                         save_data(self.data, fname)
@@ -1008,16 +1017,17 @@ class MyGUI:
                         self.set_id_db = '.'.join([str(self.match_id),
                                                    str(self.set_id)])
 
-                        self.data['sets'][self.set_id_db] = Set(self.set_id_db,
-                                                                self.bo_legs)
-                        self.data['sets'][self.set_id_db].\
+                        self.data[b'sets'][self.set_id_db] = \
+                            Set(self.set_id_db, self.bo_legs)
+                        self.data[b'sets'][self.set_id_db].\
                             save_set_throws(self.players)
 
                         self.leg_id_db = '.'.join([str(self.match_id),
                                                    str(self.set_id),
                                                    str(self.leg_id)])
-                        self.data['legs'][self.leg_id_db] = Leg(self.leg_id_db)
-                        self.data['legs'][self.leg_id_db].\
+                        self.data[b'legs'][self.leg_id_db] = \
+                            Leg(self.leg_id_db)
+                        self.data[b'legs'][self.leg_id_db].\
                             save_leg_throws(self.players)
 
                         legs_reset(self.players)
@@ -1032,7 +1042,7 @@ class MyGUI:
                                                  ['label'])
 
                         logger.info('%s has won the set %s!', player.name,
-                                    self.data['matches']
+                                    self.data[b'matches']
                                     [self.match_id].set_counter)
                 else:
 
@@ -1041,8 +1051,8 @@ class MyGUI:
                                                str(self.set_id),
                                                str(self.leg_id)])
 
-                    self.data['legs'][self.leg_id_db] = Leg(self.leg_id_db)
-                    self.data['legs'][self.leg_id_db].\
+                    self.data[b'legs'][self.leg_id_db] = Leg(self.leg_id_db)
+                    self.data[b'legs'][self.leg_id_db].\
                         save_leg_throws(self.players)
 
                     score_reset(self.players)
@@ -1059,14 +1069,34 @@ class MyGUI:
                     self.listboxes[score_keeper_oppo].insert(tkinter.END,
                                                              "501")
                     logger.info('%s has won the leg %s!', player.name,
-                                self.data['sets'][self.set_id_db].leg_counter)
+                                self.data[b'sets'][self.set_id_db].leg_counter)
 
     def start_dart_match(self, event):
-        for attr in ['bo_legs', 'bo_sets', 'player1', 'player2']:
+        for attr in ['bo_legs', 'bo_sets']:
             if not hasattr(self, attr):
                 msg = """%s is not defined yet!, make sure to press enter after
                       filling in an entrybox"""
                 logger.info(msg, (attr))
+                return
+
+        if len(self.players) != self.no_players:
+            range_players = range(1, self.no_players+1)
+            for player in self.players:
+                del range_players[range_players.index(int(player.number[1:]))]
+            if not range_players:
+                pass
+            elif len(range_players) > 1:
+                miss = ['player{:d}'.format(item) for item in range_players]
+                missing_players = ', '.join(miss)
+                msg = """%s are not defined yet! Make sure to press enter after
+                          filling in an entrybox"""
+                logger.info(msg, missing_players)
+                return
+            elif len(range_players) == 1:
+                missing_player = 'player{:d}'.format(range_players[0])
+                msg = """%s is not defined yet! Make sure to press enter after
+                          filling in an entrybox"""
+                logger.info(msg, missing_player)
                 return
 
         self.listboxes['score_keeper_p1'].delete(0, tkinter.END)
@@ -1084,50 +1114,71 @@ class MyGUI:
         self.labels['fin_msg_p1']['textvar'].set('Not yet')
         self.labels['fin_msg_p2']['textvar'].set('Not yet')
 
-        self.players = [self.player1, self.player2]
         [self.match_id, self.data, self.set_id, self.set_id_db, self.leg_id,
          self.leg_id_db, self.match_ongoing, self.imp_throws] = \
             dart_match(self.players, self.bo_legs, self.bo_sets, data_load)
         for player in self.players:
-            player.__init__(name=player.name, number=player.number,
-                            matches=player.matches)
-            if player.name not in self.data['player_list']:
-                self.data['player_list'].append(player.name)
+            #    player.__init__(name=player.name, number=player.number,
+            #    matches=player.matches)
+            if player.name not in self.data[b'player_list']:
+                self.data[b'player_list'].append(player.name)
 
-        self.labels_changing = [
-            ['leg_count_p1', self.player1.legs],
-            ['set_count_p1', self.player1.sets],
-            ['leg_count_p2', self.player2.legs],
-            ['set_count_p2', self.player2.sets],
-            ['lp1_average', self.player1.name],
-            ['lp2_average', self.player2.name],
-            ['lp1_high', self.player1.name],
-            ['lp2_high', self.player2.name],
-            ['lp1_finish', self.player1.name],
-            ['lp2_finish', self.player2.name],
-            ['throw60_count_p1', self.player1.count_60],
-            ['throw100_count_p1', self.player1.count_100],
-            ['throw140_count_p1', self.player1.count_140],
-            ['throw180_count_p1', self.player1.count_180],
-            ['throw60_count_p2', self.player2.count_60],
-            ['throw100_count_p2', self.player2.count_100],
-            ['throw140_count_p2', self.player2.count_140],
-            ['throw180_count_p2', self.player2.count_180],
-            ['finish80_count_p1', self.player1.finish_80],
-            ['finish130_count_p1', self.player1.finish_130],
-            ['finish130up_count_p1', self.player1.finish_130up],
-            ['finish80_count_p2', self.player2.finish_80],
-            ['finish130_count_p2', self.player2.finish_130],
-            ['finish130up_count_p2', self.player2.finish_130up],
-            ['count_26', '0'],
-            ['first9_average_p1', '0'],
-            ['match_average_p1', '0'],
-            ['first9_average_p2', '0'],
-            ['match_average_p2', '0']
-        ]
+            self.labels_changing = [
+                ['leg_count_{:s}', player.legs],
+                ['set_count_{:s}', player.sets],
+                ['l_average_{:s}', player.name],
+                ['l_high_{:s}', player.name],
+                ['l_finish_{:s}', player.name],
+                ['throw60_count_{:s}', player.count_60],
+                ['throw100_count_{:s}', player.count_100],
+                ['throw140_count_{:s}', player.count_140],
+                ['throw180_count_{:s}', player.count_180],
+                ['finish80_count_{:s}', player.finish_80],
+                ['finish130_count_{:s}', player.finish_130],
+                ['finish130up_count_{:s}', player.finish_130up],
+                ['first9_average_{:s}', '0'],
+                ['match_average_{:s}', '0'],
+                ['count_26', '0']
+            ]
+            for item in self.labels_changing:
+                label_name = item[0].format(player.number)
+                self.change_number_label(item[1],
+                                         self.labels[label_name]['label'])
 
-        for item in self.labels_changing:
-            self.change_number_label(item[1], self.labels[item[0]]['label'])
+#        self.labels_changing = [
+#            ['leg_count_p1', self.players[0].legs],
+#            ['set_count_p1', self.players[0].sets],
+#            ['leg_count_p2', self.players[1].legs],
+#            ['set_count_p2', self.players[1].sets],
+#            ['l_average_p1', self.players[0].name],
+#            ['l_average_p2', self.players[1].name],
+#            ['l_high_p1', self.players[0].name],
+#            ['l_high_p2', self.players[1].name],
+#            ['l_finish_p1', self.players[0].name],
+#            ['l_finish_p2', self.players[1].name],
+#            ['throw60_count_p1', self.players[0].count_60],
+#            ['throw100_count_p1', self.players[0].count_100],
+#            ['throw140_count_p1', self.players[0].count_140],
+#            ['throw180_count_p1', self.players[0].count_180],
+#            ['throw60_count_p2', self.players[1].count_60],
+#            ['throw100_count_p2', self.players[1].count_100],
+#            ['throw140_count_p2', self.players[1].count_140],
+#            ['throw180_count_p2', self.players[1].count_180],
+#            ['finish80_count_p1', self.players[0].finish_80],
+#            ['finish130_count_p1', self.players[0].finish_130],
+#            ['finish130up_count_p1', self.players[0].finish_130up],
+#            ['finish80_count_p2', self.players[1].finish_80],
+#            ['finish130_count_p2', self.players[1].finish_130],
+#            ['finish130up_count_p2', self.players[1].finish_130up],
+#            ['count_26', '0'],
+#            ['first9_average_p1', '0'],
+#            ['match_average_p1', '0'],
+#            ['first9_average_p2', '0'],
+#            ['match_average_p2', '0']
+#        ]
+#
+#        for item in self.labels_changing:
+#            self.change_number_label(item[1], self.labels[item[0]]['label'])
 
 if __name__ == "__main__":
     import logging
