@@ -7,12 +7,14 @@ Created on Sun Jan 31 22:39:23 2016
 New update 09-02-2016:
     Database issue is fixed, however it was found that the statistics for
     first 9 darts do not match yet.
-    Furthermore the code can possibly be cleaned a fair bit.
 
     ** Still to be added **
-    1. combine the 2 screens in one gui!
-    3. continue match button
+    1. Combine the 2 screens in one gui!
+    2. Order the list in database_catalogue the other way, so latest match
+    first
+    3. Continue match button
     4. Maybe add a menu for the settings of the match
+    5. Connect to postgresdatabase... readable by py3 and py2
     6. Nicer playername input fields
     7. Better layout of the gui
     10. Pop-up screen/save to excel/pdf with match overview

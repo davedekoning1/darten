@@ -384,7 +384,7 @@ class overview:
     def filling_listbox(self, listbox):
         listbox.delete(0, tkinter.END)
         for item in self.list_of_strings:
-            listbox.insert(tkinter.END, item)
+            listbox.insert(0, item)
 
     def option_changed(self, varia):
         """When player is selected, change the labels"""
@@ -393,27 +393,30 @@ class overview:
         self.filling_listbox(self.listboxes['match_box'])
         self.listboxes['match_box'].selection_clear(0, tkinter.END)
         self.listboxes['match_box'].selection_set(0)
-        self.print_match_stats(self.listboxes['match_box'])
-
+        self.remove_labels()
         self.define_labels_dict()
         for name, label in self.Labels.items():
             self.labels[name]['label'] = self.create_labels(self.labels,
                                                             name=name, **label)
+        self.print_match_stats(self.listboxes['match_box'])
 
     def onselect(self, event):
         """Change labels in graphframe, when match is selected"""
         w = event.widget
         self.print_match_stats(w)
 
-    def print_match_stats(self, widget):
-        index = int(widget.curselection()[0])
-        value = widget.get(index)
-
+    def remove_labels(self):
         for name, label in self.Labels.items():
             if label['parent'] == self.mainframes['graph_frame']:
                 self.labels[name]['label'].grid_forget()
                 self.labels[name]['label'].destroy()
                 del self.labels[name], self.Labels[name]
+
+    def print_match_stats(self, widget):
+        index = int(widget.curselection()[0])
+        value = widget.get(index)
+
+        self.remove_labels()
 
         self.selected_match_id = value.split()[0]
 
